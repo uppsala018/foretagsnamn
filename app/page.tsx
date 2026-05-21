@@ -4,7 +4,7 @@ const FAQ_ITEMS = [
   {
     question: "Är detta en officiell Bolagsverket-kontroll?",
     answer:
-      "Nej. Företagsnamn.app gör en preliminär förhandskontroll av namnformat, särskiljning och riskpunkter. Officiell kontroll behöver göras hos Bolagsverket.",
+      "Nej. Företagsnamn.app gör en preliminär förhandskontroll av namnformat, särskiljning och riskpunkter. Kontrollera även hos Verksamt/Bolagsverket. För en officiell bedömning måste namnet prövas av Bolagsverket vid registrering.",
   },
   {
     question: "Kan ni garantera att namnet är ledigt?",
@@ -69,6 +69,7 @@ export default function Home() {
 }
 
 function TrustSection() {
+  const verksamtUrl = "https://verksamt.se/bolagsverket/hjalp-att-valja-foretagsnamn";
   const items = [
     {
       title: "Domäner",
@@ -80,7 +81,7 @@ function TrustSection() {
     },
     {
       title: "Företagsnamn",
-      text: "Företagsnamn är en preliminär förhandskontroll baserad på regler och namnlogik, inte en Bolagsverket-kontroll.",
+      text: "Företagsnamn är en preliminär förhandskontroll baserad på regler och namnlogik, inte en Bolagsverket-kontroll. Kontrollera även hos Verksamt/Bolagsverket.",
     },
     {
       title: "AI-bedömning",
@@ -101,6 +102,24 @@ function TrustSection() {
             <p className="mt-3 text-sm leading-6 text-[#58655e]">{item.text}</p>
           </article>
         ))}
+      </div>
+      <div className="rounded-lg border border-[#d8d6c8] bg-white p-5 shadow-sm">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <h3 className="font-semibold">Kontrollera även hos Verksamt/Bolagsverket</h3>
+            <p className="mt-2 text-sm leading-6 text-[#58655e]">
+              För en officiell bedömning måste namnet prövas av Bolagsverket vid registrering.
+            </p>
+          </div>
+          <a
+            href={verksamtUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex shrink-0 rounded-md bg-[#15201b] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#2c382f]"
+          >
+            Öppna Verksamt/Bolagsverket
+          </a>
+        </div>
       </div>
     </section>
   );

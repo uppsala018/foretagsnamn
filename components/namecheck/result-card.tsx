@@ -23,6 +23,8 @@ const STATUS_STYLES: Record<ResultStatus, string> = {
   not_checked: "border-stone-200 bg-stone-100 text-stone-700",
 };
 
+const VERKSAMT_URL = "https://verksamt.se/bolagsverket/hjalp-att-valja-foretagsnamn";
+
 function AiAssessmentDetails({ result }: { result: NamecheckResult }) {
   const analysis = result.metadata?.aiAnalysis;
 
@@ -136,6 +138,22 @@ export function ResultCard({ result }: { result: NamecheckResult }) {
       ) : null}
       {result.details ? (
         <p className="mt-3 text-xs leading-5 text-[#6a746e]">{result.details}</p>
+      ) : null}
+      {result.category === "company_name" ? (
+        <div className="mt-4 rounded-md border border-[#d8d6c8] bg-[#f7f7f2] p-3">
+          <p className="text-sm font-semibold text-[#15201b]">Kontrollera även hos Verksamt/Bolagsverket</p>
+          <p className="mt-1 text-xs leading-5 text-[#58655e]">
+            För en officiell bedömning måste namnet prövas av Bolagsverket vid registrering.
+          </p>
+          <a
+            href={VERKSAMT_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="mt-3 inline-flex rounded-md bg-[#15201b] px-3 py-2 text-xs font-semibold text-white transition hover:bg-[#2c382f]"
+          >
+            Öppna Verksamt/Bolagsverket
+          </a>
+        </div>
       ) : null}
     </article>
   );

@@ -254,7 +254,7 @@ export async function createNamecheckReport(query: string): Promise<NamecheckRep
       ? "mixed"
       : "mock",
     aiModel: getOpenRouterModel(),
-    disclaimer: "Resultatet är en teknisk förhandskontroll och inte juridisk rådgivning. Detta är inte en officiell kontroll hos Bolagsverket. Sociala medier kan blockera automatiska kontroller. Kontrollera alltid manuellt innan beslut.",
+    disclaimer: "Resultatet är en teknisk förhandskontroll och inte juridisk rådgivning. Detta är inte en officiell kontroll hos Bolagsverket. Kontrollera även hos Verksamt/Bolagsverket. För en officiell bedömning måste namnet prövas av Bolagsverket vid registrering. Sociala medier kan blockera automatiska kontroller. Kontrollera alltid manuellt innan beslut.",
     suggestions,
     results,
   };

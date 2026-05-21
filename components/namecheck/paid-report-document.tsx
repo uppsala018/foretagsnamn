@@ -201,6 +201,15 @@ export function PaidReportDocument({
           <p className="mt-2 text-sm leading-6 text-[#3f4a44]">
             Rapporten är en teknisk förhandskontroll. Den påstår inte Bolagsverket- eller varumärkesverifiering.
           </p>
+          <p className="mt-2 text-sm font-semibold leading-6 text-[#3f4a44]">
+            Kontrollera även hos Verksamt/Bolagsverket.
+          </p>
+          <p className="mt-1 text-sm leading-6 text-[#3f4a44]">
+            För en officiell bedömning måste namnet prövas av Bolagsverket vid registrering.
+          </p>
+          <p className="mt-1 break-words text-xs leading-5 text-[#58655e]">
+            https://verksamt.se/bolagsverket/hjalp-att-valja-foretagsnamn
+          </p>
         </section>
       </div>
     </article>
