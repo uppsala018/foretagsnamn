@@ -18,6 +18,55 @@ type HostUpDomainResult = {
   requirements: string[];
 };
 
+type HostUpApiRecord = Record<string, unknown>;
+
+function isRecord(value: unknown): value is HostUpApiRecord {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function readString(value: unknown): string | null {
+  return typeof value === "string" && value.trim() ? value.trim() : null;
+}
+
+function readNumber(value: unknown): number | null {
+  if (typeof value === "number" && Number.isFinite(value)) {
+    return value;
+  }
+
+  if (typeof value === "string" && value.trim()) {
+    const parsed = Number(value);
+    return Number.isFinite(parsed) ? parsed : null;
+  }
+
+  return null;
+}
+
+function readBoolean(value: unknown): boolean | null {
+  if (typeof value === "boolean") {
+    return value;
+  }
+
+  if (typeof value === "string") {
+    const normalized = value.trim().toLowerCase();
+
+    if (["true", "yes", "1", "available"].includes(normalized)) {
+      return true;
+    }
+
+    if (["false", "no", "0", "taken", "unavailable"].includes(normalized)) {
+      return false;
+    }
+  }
+
+  return null;
+}
+
+function readRequirements(value: unknown): string[] {
+  return Array.isArray(value)
+    ? value.filter((item): item is string => typeof item === "string" && item.trim().length > 0)
+    : [];
+}
+
 function normalizeDomainBase(value: string): string {
   return value
     .trim()
@@ -45,6 +94,71 @@ function formatPrice(result: HostUpDomainResult): string {
     : result.currency ?? "SEK";
 
   return `${result.price} ${currency} första året`;
+}
+
+function normalizeHostUpDomainResult(value: unknown, fallbackName: string): HostUpDomainResult | null {
+  if (!isRecord(value)) {
+    return null;
+  }
+
+  const billing = isRecord(value.billing) ? value.billing : null;
+  const pricing = isRecord(value.pricing) ? value.pricing : null;
+  const actions = isRecord(value.actions) ? value.actions : null;
+  const canRegisterAction = actions && isRecord(actions.canRegister) ? actions.canRegister : null;
+  const name = readString(value.name)
+    ?? readString(value.domain)
+    ?? readString(value.fqdn)
+    ?? fallbackName;
+  const available = readBoolean(value.available)
+    ?? readBoolean(value.isAvailable)
+    ?? readBoolean(value.status)
+    ?? false;
+  const canRegister = readBoolean(value.canRegister)
+    ?? readBoolean(value.can_register)
+    ?? readBoolean(canRegisterAction?.allowed)
+    ?? available;
+  const price = readNumber(value.price)
+    ?? readNumber(value.registrationPrice)
+    ?? readNumber(value.registration_price)
+    ?? readNumber(pricing?.price)
+    ?? readNumber(billing?.amount);
+  const currency = readString(value.currency)
+    ?? readString(pricing?.currency)
+    ?? readString(billing?.currency)
+    ?? (price === null ? null : "SEK");
+
+  return {
+    name,
+    available,
+    price,
+    currency,
+    canRegister,
+    reason: readString(value.reason)
+      ?? readString(value.message)
+      ?? readString(canRegisterAction?.reason)
+      ?? (available ? null : "Domänen är inte tillgänglig."),
+    requirements: readRequirements(value.requirements),
+  };
+}
+
+function normalizeHostUpResponse(payload: unknown, requestedNames: string[]): HostUpDomainResult[] | null {
+  if (!isRecord(payload)) {
+    return null;
+  }
+
+  const rawResults = Array.isArray(payload.data)
+    ? payload.data
+    : Array.isArray(payload.results)
+      ? payload.results
+      : null;
+
+  if (!rawResults) {
+    return null;
+  }
+
+  return rawResults
+    .map((item, index) => normalizeHostUpDomainResult(item, requestedNames[index] ?? ""))
+    .filter((item): item is HostUpDomainResult => item !== null);
 }
 
 export function HomeClient() {
@@ -116,14 +230,18 @@ export function HomeClient() {
     if (domainResponse.status === "fulfilled") {
       try {
         const payload = await domainResponse.value.json() as {
-          results?: HostUpDomainResult[];
+          success?: boolean;
+          data?: unknown[];
+          results?: unknown[];
           error?: string;
         };
+        console.log("HostUp API-svar:", payload);
+        const normalizedResults = normalizeHostUpResponse(payload, domainNames);
 
-        if (!domainResponse.value.ok || !Array.isArray(payload.results)) {
-          setDomainError(payload.error ?? "Kunde inte kontrollera domäner just nu.");
-        } else {
-          setDomainResults(payload.results);
+        if (domainResponse.value.ok && normalizedResults) {
+          setDomainResults(normalizedResults);
+        } else if (payload.error) {
+          setDomainError(payload.error);
         }
       } catch {
         setDomainError("Kunde inte läsa domänresultaten just nu.");
