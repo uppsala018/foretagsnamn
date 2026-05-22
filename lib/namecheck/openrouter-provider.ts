@@ -290,20 +290,8 @@ export async function analyzeBrandNameWithOpenRouter(
 }
 
 export async function probeOpenRouterProvider(): Promise<void> {
-  const apiKey = process.env.OPENROUTER_API_KEY;
-
-  if (!apiKey) {
-    recordProviderDebug("openrouter", {
-      configured: false,
-      lastStatus: null,
-      lastError: "OpenRouter configuration is missing.",
-      lastRequestUrl: OPENROUTER_URL,
-    });
-    return;
-  }
-
   try {
-    await requestOpenRouterAnalysis(apiKey, getOpenRouterModel(), "Testbolag", []);
+    await analyzeBrandNameWithOpenRouter("Testbolag", []);
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : "Unknown OpenRouter network error.";
     recordProviderDebug("openrouter", {
