@@ -2,7 +2,7 @@
 
 import { FormEvent, useMemo, useState } from "react";
 import { ReportView } from "@/components/namecheck/report-view";
-import type { NamecheckReport } from "@/lib/namecheck/types";
+import type { NamecheckReport, NamecheckResult } from "@/lib/namecheck/types";
 import { MAX_QUERY_LENGTH } from "@/lib/namecheck/validation";
 
 const DOMAIN_SUFFIXES = [".se", ".nu", ".com", ".io", ".net", ".org"];
@@ -161,6 +161,62 @@ function normalizeHostUpResponse(payload: unknown, requestedNames: string[]): Ho
     .filter((item): item is HostUpDomainResult => item !== null);
 }
 
+function findDomainResult(results: HostUpDomainResult[], suffix: ".se" | ".com"): HostUpDomainResult | null {
+  return results.find((result) => result.name.toLowerCase().endsWith(suffix)) ?? null;
+}
+
+function mergeHostUpDomainResult(result: NamecheckResult, hostupResult: HostUpDomainResult): NamecheckResult {
+  const isSeDomain = result.category === "domain_se";
+
+  return {
+    ...result,
+    value: hostupResult.name,
+    status: hostupResult.available ? "available" : "taken",
+    summary: hostupResult.available
+      ? `${hostupResult.name} är ledig via HostUp.`
+      : `${hostupResult.name} är upptagen enligt HostUp.`,
+    details: hostupResult.available
+      ? "Verifierad domändata från HostUp."
+      : hostupResult.reason ?? "Verifierad domändata från HostUp.",
+    checkLabel: "Indikativ kontroll",
+    metadata: {
+      ...result.metadata,
+      domainPriceLabel: formatPrice(hostupResult),
+      canRegister: hostupResult.canRegister,
+      registryInfo: isSeDomain
+        ? "Kräver telefonnummer, personnummer/org.nr och godkännande av registreringsvillkor"
+        : undefined,
+    } as NamecheckResult["metadata"],
+  };
+}
+
+function mergeHostUpResultsIntoReport(
+  report: NamecheckReport,
+  hostupResults: HostUpDomainResult[],
+): NamecheckReport {
+  const seResult = findDomainResult(hostupResults, ".se");
+  const comResult = findDomainResult(hostupResults, ".com");
+
+  if (!seResult && !comResult) {
+    return report;
+  }
+
+  return {
+    ...report,
+    results: report.results.map((result) => {
+      if (result.category === "domain_se" && seResult) {
+        return mergeHostUpDomainResult(result, seResult);
+      }
+
+      if (result.category === "domain_com" && comResult) {
+        return mergeHostUpDomainResult(result, comResult);
+      }
+
+      return result;
+    }),
+  };
+}
+
 export function HomeClient() {
   const [query, setQuery] = useState("");
   const [report, setReport] = useState<NamecheckReport | null>(null);
@@ -173,6 +229,10 @@ export function HomeClient() {
   const domainNames = useMemo(
     () => domainBase ? DOMAIN_SUFFIXES.map((suffix) => `${domainBase}${suffix}`) : [],
     [domainBase],
+  );
+  const reportWithHostUpDomains = useMemo(
+    () => report ? mergeHostUpResultsIntoReport(report, domainResults) : null,
+    [report, domainResults],
   );
   const canSubmit = domainBase.length > 0 && !isLoading;
 
@@ -318,7 +378,7 @@ export function HomeClient() {
         </aside>
       </section>
 
-      {report ? <ReportView report={report} /> : null}
+      {reportWithHostUpDomains ? <ReportView report={reportWithHostUpDomains} /> : null}
 
       {isLoading ? (
         <div className="flex items-center gap-3 rounded-lg border border-[#d8d6c8] bg-white px-5 py-4 text-sm text-[#58655e] shadow-sm">

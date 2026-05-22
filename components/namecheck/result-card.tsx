@@ -25,6 +25,12 @@ const STATUS_STYLES: Record<ResultStatus, string> = {
 
 const VERKSAMT_URL = "https://verksamt.se/bolagsverket/hjalp-att-valja-foretagsnamn";
 
+type DomainMetadata = NonNullable<NamecheckResult["metadata"]> & {
+  domainPriceLabel?: string;
+  canRegister?: boolean;
+  registryInfo?: string;
+};
+
 function AiAssessmentDetails({ result }: { result: NamecheckResult }) {
   const analysis = result.metadata?.aiAnalysis;
 
@@ -77,6 +83,15 @@ function AiAssessmentDetails({ result }: { result: NamecheckResult }) {
 }
 
 export function ResultCard({ result }: { result: NamecheckResult }) {
+  const domainMetadata = result.metadata as DomainMetadata | undefined;
+  const isHostUpDomainCard = (result.category === "domain_se" || result.category === "domain_com")
+    && Boolean(domainMetadata?.domainPriceLabel);
+  const statusLabel = isHostUpDomainCard
+    ? result.status === "available"
+      ? "Ledig"
+      : "Upptagen"
+    : STATUS_LABELS[result.status];
+
   return (
     <article className="rounded-lg border border-[#d8d6c8] bg-white p-5 shadow-sm">
       <div className="flex items-start justify-between gap-3">
@@ -85,10 +100,30 @@ export function ResultCard({ result }: { result: NamecheckResult }) {
           <p className="mt-1 break-words text-sm text-[#58655e]">{result.value}</p>
         </div>
         <span className={`shrink-0 rounded-full border px-3 py-1 text-xs font-semibold ${STATUS_STYLES[result.status]}`}>
-          {STATUS_LABELS[result.status]}
+          {statusLabel}
         </span>
       </div>
       <p className="mt-4 text-sm leading-6 text-[#3f4a44]">{result.summary}</p>
+      {isHostUpDomainCard ? (
+        <div className="mt-4 space-y-3">
+          <p className="text-2xl font-semibold text-[#15201b]">{domainMetadata?.domainPriceLabel}</p>
+          {domainMetadata?.registryInfo ? (
+            <p className="text-xs leading-5 text-[#58655e]">{domainMetadata.registryInfo}</p>
+          ) : null}
+          {result.status === "available" ? (
+            <>
+              {/* TODO: Köp-flöde */}
+              <button
+                type="button"
+                disabled={domainMetadata?.canRegister === false}
+                className="min-h-12 w-full rounded-md bg-blue-600 px-5 font-semibold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-[#9aa49e]"
+              >
+                Köp nu
+              </button>
+            </>
+          ) : null}
+        </div>
+      ) : null}
       {result.category === "ai_assessment" ? (
         <AiAssessmentDetails result={result} />
       ) : null}
