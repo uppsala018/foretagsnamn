@@ -35,8 +35,42 @@ The free preview and paid reports still work without these, but results become f
 - `NAMECHEAP_USERNAME` - Namecheap username
 - `NAMECHEAP_CLIENT_IP` - whitelisted IPv4 address for Namecheap API
 - `NAMECHEAP_SANDBOX` - `true` for sandbox, `false` for production
+- `NAMECHEAP_PROXY_URL` - optional static-IP proxy URL for Vercel, for example `http://185.159.75.134:8787/namecheap/check`
+- `NAMECHEAP_PROXY_SECRET` - shared secret sent to the proxy in `x-proxy-secret`
 
 Namecheap requires API access and IPv4 allowlisting. If Namecheap fails, domain cards fall back to indicative results. OpenRouter failures become uncertain AI fallback results. Instagram/TikTok checks are public URL status checks only and may return uncertain if platforms block automation.
+
+### Namecheap proxy for Vercel
+
+Vercel outbound IPs are not reliably static. Because Namecheap validates requests against the whitelisted client IP, direct Vercel to Namecheap calls can fail with `Invalid request IP`.
+
+Run `scripts/namecheap-proxy-server.mjs` on the Linux server with whitelisted IP `185.159.75.134`, then set `NAMECHEAP_PROXY_URL` in Vercel. When `NAMECHEAP_PROXY_URL` and `NAMECHEAP_PROXY_SECRET` are present, the app sends only `{ "domains": ["example.com"] }` to the proxy. The proxy holds the Namecheap API credentials server-side and returns safe parsed JSON.
+
+Example Vercel values:
+
+```env
+NAMECHEAP_PROXY_URL=http://185.159.75.134:8787/namecheap/check
+NAMECHEAP_PROXY_SECRET=change-this-long-random-secret
+```
+
+Example Linux server setup:
+
+```bash
+export NAMECHEAP_API_USER="..."
+export NAMECHEAP_API_KEY="..."
+export NAMECHEAP_USERNAME="..."
+export NAMECHEAP_CLIENT_IP="185.159.75.134"
+export NAMECHEAP_SANDBOX="false"
+export NAMECHEAP_PROXY_SECRET="change-this-long-random-secret"
+export PORT="8787"
+node scripts/namecheap-proxy-server.mjs
+```
+
+Health check:
+
+```bash
+curl http://185.159.75.134:8787/health
+```
 
 ## Vercel checklist
 

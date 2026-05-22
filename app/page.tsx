@@ -9,7 +9,7 @@ const FAQ_ITEMS = [
   {
     question: "Kan ni garantera att namnet är ledigt?",
     answer:
-      "Nej. Resultatet är en teknisk förhandskontroll. Domäner kan verifieras via Namecheap när API är konfigurerat, men företagsnamn, sociala medier och AI-risk är indikativa.",
+      "Nej. Resultatet är en teknisk förhandskontroll. Domäner kan verifieras via Namecheap när API är konfigurerat, men vissa TLD:er, till exempel .se, kan sakna direkt Namecheap-verifiering och visas då som indikativa.",
   },
   {
     question: "Vad ingår i djupsökningen?",
@@ -73,7 +73,7 @@ function TrustSection() {
   const items = [
     {
       title: "Domäner",
-      text: "Domäner kontrolleras via Namecheap när API är konfigurerat. Annars visas tydligt att resultatet är indikativt.",
+      text: "Domäner kontrolleras via Namecheap när API är konfigurerat. Vissa TLD:er kan sakna direkt Namecheap-verifiering och markeras då som indikativa.",
     },
     {
       title: "Sociala medier",

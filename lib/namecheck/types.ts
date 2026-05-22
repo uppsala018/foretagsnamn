@@ -35,13 +35,13 @@ export type NamecheckResult = NamecheckTarget & {
   summary: string;
   details?: string;
   checkLabel?: "Verifierad via Namecheap" | "Preliminär namnkontroll" | "Indikativ kontroll" | "Indikativ offentlig profilkontroll" | "AI-bedömning";
-  source?: "namecheap" | "openrouter" | "mock" | "fallback" | "public_profile_check" | "rules_based_precheck";
+  source?: "namecheap" | "openrouter" | "mock" | "fallback" | "unsupported_tld_fallback" | "public_profile_check" | "rules_based_precheck";
   metadata?: {
     isPremiumName?: boolean;
     premiumRegistrationPrice?: string;
     premiumRenewalPrice?: string;
     fallbackReason?: string;
-    confidence?: "indicative";
+    confidence?: "indicative" | "low";
     checkedUrl?: string;
     checkedAt?: string;
     warning?: string;
