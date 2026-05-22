@@ -13,39 +13,53 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Inga domäner angivna" }, { status: 400 });
     }
 
-    if (!process.env.HOSTUP_API_KEY) {
-      return NextResponse.json({ error: "HOSTUP_API_KEY saknas" }, { status: 500 });
+    const apiKey = process.env.HOSTUP_API_KEY;
+    if (!apiKey) {
+      console.error("HOSTUP_API_KEY saknas i Vercel env");
+      return NextResponse.json({
+        error: "HOSTUP_API_KEY saknas i Vercel",
+        fix: "Lägg till HOSTUP_API_KEY i Vercel Settings → Environment Variables"
+      }, { status: 500 });
     }
+
+    console.log("HostUp check startad för", names.length, "domäner");
 
     // Steg 1: Skicka check-förfrågan
     const startRes = await fetch(HOSTUP_URL, {
       method: "POST",
       headers: {
-        "Authorization": `Bearer ${process.env.HOSTUP_API_KEY}`,
+        "Authorization": `Bearer ${apiKey}`,
         "Content-Type": "application/json",
         "Accept": "application/json",
       },
       body: JSON.stringify({ names }),
     });
 
+    if (!startRes.ok) {
+      const errorText = await startRes.text();
+      console.error("HostUp start-fel:", startRes.status, errorText);
+      return NextResponse.json({ error: `HostUp startfel: ${startRes.status}` }, { status: startRes.status });
+    }
+
     const startData = await startRes.json();
 
-    // Steg 2: Om det är inline-svar (200) → returnera direkt
-    if (startRes.ok && startData.data) {
+    // Steg 2: Inline-svar (200)
+    if (startData.data) {
+      console.log("HostUp gav inline-svar");
       return NextResponse.json({ success: true, data: startData.data });
     }
 
-    // Steg 3: Om det är queued (202) → hämta pollUrl
+    // Steg 3: Queued-svar
     if (startData.operation?.pollUrl) {
       const pollUrl = `https://cloud.hostup.se${startData.operation.pollUrl}`;
+      console.log("HostUp köade – pollUrl:", pollUrl);
 
-      // Polla tills klart
       for (let i = 0; i < MAX_POLL_ATTEMPTS; i++) {
-        await new Promise((resolve) => setTimeout(resolve, POLL_DELAY_MS));
+        await new Promise(resolve => setTimeout(resolve, POLL_DELAY_MS));
 
         const pollRes = await fetch(pollUrl, {
           headers: {
-            "Authorization": `Bearer ${process.env.HOSTUP_API_KEY}`,
+            "Authorization": `Bearer ${apiKey}`,
             "Accept": "application/json",
           },
         });
@@ -53,6 +67,7 @@ export async function POST(request: NextRequest) {
         const pollData = await pollRes.json();
 
         if (pollRes.ok && pollData.status === "completed" && pollData.data) {
+          console.log("HostUp polling klar –", pollData.data.length, "resultat");
           return NextResponse.json({ success: true, data: pollData.data });
         }
 
@@ -60,19 +75,21 @@ export async function POST(request: NextRequest) {
           return NextResponse.json({ error: "HostUp check misslyckades", details: pollData }, { status: 500 });
         }
       }
-
       return NextResponse.json({ error: "HostUp timeout vid polling" }, { status: 504 });
     }
 
-    // Fallback om pollUrl saknas (detta är det gamla felet)
-    console.error("HostUp queued men ingen pollUrl:", startData);
+    // Fallback
+    console.error("Okänt HostUp-svar:", startData);
     return NextResponse.json({
-      error: "HostUp köade svaret men skickade ingen pollUrl",
+      error: "HostUp gav okänt svar",
       debug: startData
     }, { status: 502 });
 
   } catch (err: any) {
-    console.error("HostUp API error:", err);
-    return NextResponse.json({ error: "Internt fel i HostUp-integrationen", message: err.message }, { status: 500 });
+    console.error("HostUp API catch error:", err.message, err.stack);
+    return NextResponse.json({
+      error: "Kunde inte kontrollera domäner just nu",
+      debug: err.message
+    }, { status: 500 });
   }
 }
