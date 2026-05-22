@@ -7,7 +7,7 @@ type HealthStatus = {
   stripeConfigured: boolean;
   firebaseConfigured: boolean;
   openrouterConfigured: boolean;
-  namecheapConfigured: boolean;
+  hostupConfigured: boolean;
 };
 
 const STATUS_ROWS: Array<{
@@ -17,7 +17,7 @@ const STATUS_ROWS: Array<{
   { key: "stripeConfigured", label: "Stripe konfigurerat" },
   { key: "firebaseConfigured", label: "Firebase konfigurerat" },
   { key: "openrouterConfigured", label: "OpenRouter konfigurerat" },
-  { key: "namecheapConfigured", label: "Namecheap konfigurerat" },
+  { key: "hostupConfigured", label: "HostUp konfigurerat" },
 ];
 
 export function DiagnosticsClient() {

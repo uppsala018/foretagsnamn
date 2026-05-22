@@ -34,8 +34,8 @@ export type NamecheckResult = NamecheckTarget & {
   status: ResultStatus;
   summary: string;
   details?: string;
-  checkLabel?: "Verifierad via Namecheap" | "Preliminär namnkontroll" | "Indikativ kontroll" | "Indikativ offentlig profilkontroll" | "AI-bedömning";
-  source?: "namecheap" | "openrouter" | "mock" | "fallback" | "unsupported_tld_fallback" | "public_profile_check" | "rules_based_precheck";
+  checkLabel?: "Preliminär namnkontroll" | "Indikativ kontroll" | "Indikativ offentlig profilkontroll" | "AI-bedömning";
+  source?: "openrouter" | "mock" | "fallback" | "unsupported_tld_fallback" | "public_profile_check" | "rules_based_precheck";
   metadata?: {
     isPremiumName?: boolean;
     premiumRegistrationPrice?: string;
@@ -69,7 +69,7 @@ export type NamecheckReport = {
   query: string;
   normalizedQuery: string;
   generatedAt: string;
-  provider: "mock" | "mixed" | "namecheap";
+  provider: "mock" | "mixed";
   aiModel: string;
   disclaimer: string;
   suggestions: NamecheckSuggestions;

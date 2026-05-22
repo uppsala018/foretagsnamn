@@ -8,10 +8,6 @@ import {
   hasOpenRouterConfig,
   probeOpenRouterProvider,
 } from "@/lib/namecheck/openrouter-provider";
-import {
-  hasNamecheapConfig,
-  probeNamecheapProvider,
-} from "@/lib/namecheck/namecheap-provider";
 
 const NO_STORE_HEADERS = {
   "Cache-Control": "no-store, no-cache, must-revalidate",
@@ -26,19 +22,12 @@ function readEnvPresence() {
   return {
     OPENROUTER_API_KEY: envExists("OPENROUTER_API_KEY"),
     OPENROUTER_MODEL: envExists("OPENROUTER_MODEL"),
-    NAMECHEAP_API_USER: envExists("NAMECHEAP_API_USER"),
-    NAMECHEAP_API_KEY: envExists("NAMECHEAP_API_KEY"),
-    NAMECHEAP_USERNAME: envExists("NAMECHEAP_USERNAME"),
-    NAMECHEAP_CLIENT_IP: envExists("NAMECHEAP_CLIENT_IP"),
-    NAMECHEAP_SANDBOX: envExists("NAMECHEAP_SANDBOX"),
-    NAMECHEAP_PROXY_URL: envExists("NAMECHEAP_PROXY_URL"),
-    NAMECHEAP_PROXY_SECRET: envExists("NAMECHEAP_PROXY_SECRET"),
+    HOSTUP_API_KEY: envExists("HOSTUP_API_KEY"),
   };
 }
 
 function refreshConfiguredState() {
   recordProviderDebug("openrouter", { configured: hasOpenRouterConfig() });
-  recordProviderDebug("namecheap", { configured: hasNamecheapConfig() });
 }
 
 export async function GET(request: Request) {
@@ -48,10 +37,7 @@ export async function GET(request: Request) {
   refreshConfiguredState();
 
   if (shouldProbe) {
-    await Promise.allSettled([
-      probeOpenRouterProvider(),
-      probeNamecheapProvider(),
-    ]);
+    await Promise.allSettled([probeOpenRouterProvider()]);
   }
 
   const snapshot = getProviderDebugSnapshot();
@@ -70,11 +56,7 @@ export async function GET(request: Request) {
       openrouterLastStatus: snapshot.openrouter.lastStatus,
       openrouterLastError: snapshot.openrouter.lastError,
       openrouterLastRequestUrl: snapshot.openrouter.lastRequestUrl,
-      namecheapConfigured: snapshot.namecheap.configured,
-      namecheapSandbox: process.env.NAMECHEAP_SANDBOX !== "false",
-      namecheapLastStatus: snapshot.namecheap.lastStatus,
-      namecheapLastError: snapshot.namecheap.lastError,
-      namecheapLastRequestUrl: snapshot.namecheap.lastRequestUrl,
+      hostupConfigured: envExists("HOSTUP_API_KEY"),
     },
     {
       headers: NO_STORE_HEADERS,

@@ -8,18 +8,10 @@ export type ProviderDebugState = {
 
 export type ProviderDebugSnapshot = {
   openrouter: ProviderDebugState;
-  namecheap: ProviderDebugState;
 };
 
 const providerDebugState: ProviderDebugSnapshot = {
   openrouter: {
-    configured: false,
-    lastStatus: null,
-    lastError: null,
-    lastRequestUrl: null,
-    lastCheckedAt: null,
-  },
-  namecheap: {
     configured: false,
     lastStatus: null,
     lastError: null,
@@ -98,6 +90,5 @@ export function recordProviderDebug(
 export function getProviderDebugSnapshot(): ProviderDebugSnapshot {
   return {
     openrouter: { ...providerDebugState.openrouter },
-    namecheap: { ...providerDebugState.namecheap },
   };
 }

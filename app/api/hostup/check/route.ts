@@ -1,8 +1,7 @@
-// HostUp integration – använder testnyckel. Byt till live-nyckel senare.
+// HOSTUP_API_KEY hanteras manuellt i .env av användaren
 import { NextResponse } from "next/server";
 
 const HOSTUP_AVAILABILITY_URL = "https://cloud.hostup.se/api/v2/domains/availability";
-const HOSTUP_TEST_API_KEY = "sk_test_WfZq9OagexY3ON9Ts5iqb0cdwwO7t988";
 const MAX_POLL_ATTEMPTS = 15;
 const POLL_DELAY_MS = 800;
 const MAX_DOMAINS = 20;
@@ -190,7 +189,11 @@ function normalizeHostUpPayload(payload: unknown, requestedNames: string[]): Hos
 }
 
 async function hostupFetch(url: string, init?: RequestInit): Promise<Response> {
-  const apiKey = process.env.HOSTUP_API_KEY ?? HOSTUP_TEST_API_KEY;
+  const apiKey = process.env.HOSTUP_API_KEY;
+
+  if (!apiKey) {
+    throw new Error("HOSTUP_API_KEY saknas.");
+  }
 
   return fetch(url, {
     ...init,

@@ -1,4 +1,3 @@
-// HostUp integration – använder testnyckel. Byt till live-nyckel senare.
 import { HomeClient } from "./page-client";
 
 const FAQ_ITEMS = [

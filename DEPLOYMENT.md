@@ -28,49 +28,11 @@ If Stripe is missing, the paid button is disabled or checkout returns a safe err
 
 The free preview and paid reports still work without these, but results become fallback or indicative:
 
+- `HOSTUP_API_KEY` - enables real HostUp domain availability checks
 - `OPENROUTER_API_KEY` - enables real AI brand/name risk analysis
 - `OPENROUTER_MODEL` - defaults to `deepseek/deepseek-v4-flash:free`
-- `NAMECHEAP_API_USER` - enables real domain checks
-- `NAMECHEAP_API_KEY` - Namecheap API key
-- `NAMECHEAP_USERNAME` - Namecheap username
-- `NAMECHEAP_CLIENT_IP` - whitelisted IPv4 address for Namecheap API
-- `NAMECHEAP_SANDBOX` - `true` for sandbox, `false` for production
-- `NAMECHEAP_PROXY_URL` - optional static-IP proxy URL for Vercel, for example `http://185.159.75.134:8787/namecheap/check`
-- `NAMECHEAP_PROXY_SECRET` - shared secret sent to the proxy in `x-proxy-secret`
 
-Namecheap requires API access and IPv4 allowlisting. If Namecheap fails, domain cards fall back to indicative results. OpenRouter failures become uncertain AI fallback results. Instagram/TikTok checks are public URL status checks only and may return uncertain if platforms block automation.
-
-### Namecheap proxy for Vercel
-
-Vercel outbound IPs are not reliably static. Because Namecheap validates requests against the whitelisted client IP, direct Vercel to Namecheap calls can fail with `Invalid request IP`.
-
-Run `scripts/namecheap-proxy-server.mjs` on the Linux server with whitelisted IP `185.159.75.134`, then set `NAMECHEAP_PROXY_URL` in Vercel. When `NAMECHEAP_PROXY_URL` and `NAMECHEAP_PROXY_SECRET` are present, the app sends only `{ "domains": ["example.com"] }` to the proxy. The proxy holds the Namecheap API credentials server-side and returns safe parsed JSON.
-
-Example Vercel values:
-
-```env
-NAMECHEAP_PROXY_URL=http://185.159.75.134:8787/namecheap/check
-NAMECHEAP_PROXY_SECRET=change-this-long-random-secret
-```
-
-Example Linux server setup:
-
-```bash
-export NAMECHEAP_API_USER="..."
-export NAMECHEAP_API_KEY="..."
-export NAMECHEAP_USERNAME="..."
-export NAMECHEAP_CLIENT_IP="185.159.75.134"
-export NAMECHEAP_SANDBOX="false"
-export NAMECHEAP_PROXY_SECRET="change-this-long-random-secret"
-export PORT="8787"
-node scripts/namecheap-proxy-server.mjs
-```
-
-Health check:
-
-```bash
-curl http://185.159.75.134:8787/health
-```
+HostUp domain failures are shown as domain-check errors on the homepage without blocking the AI report. OpenRouter failures become uncertain AI fallback results. Instagram/TikTok checks are public URL status checks only and may return uncertain if platforms block automation.
 
 ## Vercel checklist
 
@@ -81,7 +43,7 @@ curl http://185.159.75.134:8787/health
 5. Create a Firebase service account with Firestore access and set the Firebase env vars.
 6. Run a production deployment.
 7. Check `/api/health` after deploy. It returns booleans only and never exposes secrets.
-8. Test free preview, Stripe checkout, success page, stored paid report reload, and print/PDF.
+8. Test free preview, HostUp domain cards, Stripe checkout, success page, stored paid report reload, and print/PDF.
 
 ## Manual live-test checklist
 
@@ -89,16 +51,18 @@ Use this checklist after every production deployment:
 
 1. Visit `/` and confirm the homepage loads with the search field, trust copy, how-it-works section, and FAQ.
 2. Run a free search with a normal Swedish name, for example `Gröna Verkstan`.
-3. Run a free search with `å`, `ä`, or `ö` and confirm domain/handle suggestions normalize correctly.
-4. Visit `/api/health` and confirm it returns only safe booleans.
-5. Visit `/diagnostics` and confirm the same safe configuration status is visible.
-6. Start Stripe Checkout in test mode from a free preview result.
-7. Complete paid checkout with a Stripe test card.
-8. Confirm `/success?session_id=...` renders a `Djupsökningsrapport`.
-9. Reload the same success URL and confirm the same stored report returns from Firestore.
-10. Use `Skriv ut / spara som PDF` and confirm buttons/navigation are hidden in the print view.
-11. Visit `/robots.txt` and confirm it points to the sitemap.
-12. Visit `/sitemap.xml` and confirm the production URL is listed.
+3. Confirm the AI report and social profile checks render before the HostUp domain cards.
+4. Confirm HostUp returns `.se`, `.nu`, `.com`, `.io`, `.net`, and `.org` domain cards.
+5. Run a free search with `å`, `ä`, or `ö` and confirm domain/handle suggestions normalize correctly.
+6. Visit `/api/health` and confirm it returns only safe booleans.
+7. Visit `/diagnostics` and confirm the same safe configuration status is visible.
+8. Start Stripe Checkout in test mode from a free preview result.
+9. Complete paid checkout with a Stripe test card.
+10. Confirm `/success?session_id=...` renders a `Djupsökningsrapport`.
+11. Reload the same success URL and confirm the same stored report returns from Firestore.
+12. Use `Skriv ut / spara som PDF` and confirm buttons/navigation are hidden in the print view.
+13. Visit `/robots.txt` and confirm it points to the sitemap.
+14. Visit `/sitemap.xml` and confirm the production URL is listed.
 
 ## Production troubleshooting
 
@@ -110,9 +74,9 @@ Check `STRIPE_SECRET_KEY`, `STRIPE_PRICE_ID_DEEP_SEARCH`, and `NEXT_PUBLIC_APP_U
 
 Check `FIREBASE_PROJECT_ID`, `FIREBASE_CLIENT_EMAIL`, and `FIREBASE_PRIVATE_KEY`. The app intentionally returns `503` if report storage is not configured.
 
-### Namecheap returns fallback
+### HostUp returns domain errors
 
-Check `NAMECHEAP_API_USER`, `NAMECHEAP_API_KEY`, `NAMECHEAP_USERNAME`, `NAMECHEAP_CLIENT_IP`, and `NAMECHEAP_SANDBOX`. Namecheap also requires IPv4 allowlisting.
+Check `HOSTUP_API_KEY` in Vercel and confirm the HostUp availability endpoint accepts the configured key.
 
 ### OpenRouter returns uncertain
 

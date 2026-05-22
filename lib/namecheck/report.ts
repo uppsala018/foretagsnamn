@@ -1,6 +1,5 @@
 import { checkCompanyName } from "./company-name-provider";
 import { mockNamecheckProvider } from "./mock-provider";
-import { checkDomainsWithNamecheap, hasNamecheapConfig } from "./namecheap-provider";
 import {
   analyzeBrandNameWithOpenRouter,
   getOpenRouterModel,
@@ -116,21 +115,8 @@ async function createDomainResults(
   domainTargets: NamecheckTarget[],
   normalizedQuery: string,
 ): Promise<NamecheckResult[]> {
-  if (hasNamecheapConfig()) {
-    try {
-      return await checkDomainsWithNamecheap(domainTargets);
-    } catch (error) {
-      console.warn(
-        "Namecheap domain check failed; using mock fallback.",
-        error instanceof Error ? error.name : "UnknownError",
-      );
-      const mockDomainResults = await mockNamecheckProvider.check(domainTargets, normalizedQuery);
-      return markDomainFallback(mockDomainResults, "namecheap_api_failed");
-    }
-  }
-
   const mockDomainResults = await mockNamecheckProvider.check(domainTargets, normalizedQuery);
-  return markDomainFallback(mockDomainResults, "missing_namecheap_config");
+  return markDomainFallback(mockDomainResults, "domain_check_handled_by_hostup_cards");
 }
 
 async function createSocialResults(
@@ -250,9 +236,7 @@ export async function createNamecheckReport(query: string): Promise<NamecheckRep
     query,
     normalizedQuery,
     generatedAt: new Date().toISOString(),
-    provider: domainResults.every((result) => result.source === "namecheap")
-      ? "mixed"
-      : "mock",
+    provider: "mock",
     aiModel: getOpenRouterModel(),
     disclaimer: "Resultatet är en teknisk förhandskontroll och inte juridisk rådgivning. Detta är inte en officiell kontroll hos Bolagsverket. Kontrollera även hos Verksamt/Bolagsverket. För en officiell bedömning måste namnet prövas av Bolagsverket vid registrering. Sociala medier kan blockera automatiska kontroller. Kontrollera alltid manuellt innan beslut.",
     suggestions,
