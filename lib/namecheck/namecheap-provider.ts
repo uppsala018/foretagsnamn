@@ -1,4 +1,9 @@
 import type { NamecheckResult, NamecheckTarget } from "./types";
+import {
+  recordProviderDebug,
+  redactUrlSecret,
+  summarizeProviderError,
+} from "./provider-diagnostics";
 
 const SANDBOX_URL = "https://api.sandbox.namecheap.com/xml.response";
 const PRODUCTION_URL = "https://api.namecheap.com/xml.response";
@@ -93,7 +98,9 @@ export function parseNamecheapDomainsCheckResponse(xml: string): ParsedNamecheap
 }
 
 export function hasNamecheapConfig(): boolean {
-  return getNamecheapConfig() !== null;
+  const configured = getNamecheapConfig() !== null;
+  recordProviderDebug("namecheap", { configured });
+  return configured;
 }
 
 export async function checkDomainsWithNamecheap(
@@ -102,6 +109,12 @@ export async function checkDomainsWithNamecheap(
   const config = getNamecheapConfig();
 
   if (!config) {
+    recordProviderDebug("namecheap", {
+      configured: false,
+      lastStatus: null,
+      lastError: "Namecheap configuration is missing.",
+      lastRequestUrl: null,
+    });
     throw new Error("Namecheap configuration is missing.");
   }
 
@@ -115,20 +128,87 @@ export async function checkDomainsWithNamecheap(
     DomainList: targets.map((target) => target.value).join(","),
   });
 
-  const response = await fetch(`${endpoint}?${params.toString()}`, {
-    cache: "no-store",
+  const requestUrl = `${endpoint}?${params.toString()}`;
+  const safeRequestUrl = redactUrlSecret(requestUrl);
+
+  recordProviderDebug("namecheap", {
+    configured: true,
+    lastStatus: null,
+    lastError: null,
+    lastRequestUrl: safeRequestUrl,
+  });
+
+  let response: Response;
+
+  try {
+    response = await fetch(requestUrl, {
+      cache: "no-store",
+    });
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : "Unknown Namecheap network error.";
+    recordProviderDebug("namecheap", {
+      configured: true,
+      lastStatus: null,
+      lastError: errorMessage,
+      lastRequestUrl: safeRequestUrl,
+    });
+    console.warn("Namecheap provider failed.", {
+      status: null,
+      requestUrl: safeRequestUrl,
+      error: summarizeProviderError(errorMessage),
+    });
+    throw error;
+  }
+
+  recordProviderDebug("namecheap", {
+    configured: true,
+    lastStatus: response.status,
+    lastError: null,
+    lastRequestUrl: safeRequestUrl,
   });
 
   if (!response.ok) {
-    throw new Error(`Namecheap HTTP status ${response.status}.`);
+    const errorText = await response.text();
+    const errorMessage = `Namecheap HTTP status ${response.status}. ${errorText.slice(0, 500)}`;
+    recordProviderDebug("namecheap", {
+      configured: true,
+      lastStatus: response.status,
+      lastError: errorMessage,
+      lastRequestUrl: safeRequestUrl,
+    });
+    console.warn("Namecheap provider failed.", {
+      status: response.status,
+      requestUrl: safeRequestUrl,
+      error: summarizeProviderError(errorMessage),
+    });
+    throw new Error(errorMessage);
   }
 
   const xml = await response.text();
   const parsed = parseNamecheapDomainsCheckResponse(xml);
 
   if (parsed.errors.length > 0) {
-    throw new Error(`Namecheap API error: ${parsed.errors[0]}`);
+    const errorMessage = `Namecheap API error: ${parsed.errors[0]}`;
+    recordProviderDebug("namecheap", {
+      configured: true,
+      lastStatus: response.status,
+      lastError: errorMessage,
+      lastRequestUrl: safeRequestUrl,
+    });
+    console.warn("Namecheap provider failed.", {
+      status: response.status,
+      requestUrl: safeRequestUrl,
+      error: summarizeProviderError(errorMessage),
+    });
+    throw new Error(errorMessage);
   }
+
+  recordProviderDebug("namecheap", {
+    configured: true,
+    lastStatus: response.status,
+    lastError: null,
+    lastRequestUrl: safeRequestUrl,
+  });
 
   return targets.map((target) => {
     const domainResult = parsed.domains.find(
@@ -167,4 +247,14 @@ export async function checkDomainsWithNamecheap(
       },
     };
   });
+}
+
+export async function probeNamecheapProvider(): Promise<void> {
+  await checkDomainsWithNamecheap([
+    {
+      category: "domain_com",
+      label: ".com domain",
+      value: "example.com",
+    },
+  ]);
 }

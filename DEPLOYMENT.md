@@ -29,7 +29,7 @@ If Stripe is missing, the paid button is disabled or checkout returns a safe err
 The free preview and paid reports still work without these, but results become fallback or indicative:
 
 - `OPENROUTER_API_KEY` - enables real AI brand/name risk analysis
-- `OPENROUTER_MODEL` - defaults to `openrouter/tencent/hy3-preview`
+- `OPENROUTER_MODEL` - defaults to `tencent/hy3-preview`
 - `NAMECHEAP_API_USER` - enables real domain checks
 - `NAMECHEAP_API_KEY` - Namecheap API key
 - `NAMECHEAP_USERNAME` - Namecheap username
