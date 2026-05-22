@@ -8,7 +8,7 @@ import type { AiBrandAnalysis, BrandRisk, NamecheckResult } from "./types";
 
 const OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions";
 const DEFAULT_MODEL = "tencent/hy3-preview";
-const TIMEOUT_MS = 12_000;
+const TIMEOUT_MS = 25_000;
 const MAX_CONTENT_LENGTH = 8_000;
 const MAX_ITEM_LENGTH = 180;
 
