@@ -5,8 +5,19 @@ import { ReportView } from "@/components/namecheck/report-view";
 import type { NamecheckReport, NamecheckResult } from "@/lib/namecheck/types";
 import { MAX_QUERY_LENGTH } from "@/lib/namecheck/validation";
 
-const DOMAIN_SUFFIXES = [".se", ".nu", ".com", ".io", ".net", ".org"];
-const REGISTRY_REQUIREMENTS = new Set(["se", "nu"]);
+const DOMAIN_SUFFIXES = [
+  ".se",
+  ".nu",
+  ".com",
+  ".io",
+  ".net",
+  ".org",
+  ".xyz",
+  ".eu",
+  ".online",
+  ".store",
+  ".blog",
+];
 
 type HostUpDomainResult = {
   name: string;
@@ -78,10 +89,6 @@ function normalizeDomainBase(value: string): string {
     .replace(/ö/g, "o")
     .replace(/[^a-z0-9]+/g, "")
     .slice(0, 63);
-}
-
-function tldFor(domain: string): string {
-  return domain.split(".").pop()?.toLowerCase() ?? "";
 }
 
 function formatPrice(result: HostUpDomainResult): string {
@@ -165,6 +172,10 @@ function findDomainResult(results: HostUpDomainResult[], suffix: ".se" | ".com")
   return results.find((result) => result.name.toLowerCase().endsWith(suffix)) ?? null;
 }
 
+function isCheapDomain(result: HostUpDomainResult): boolean {
+  return result.available && result.price !== null && result.price <= 60;
+}
+
 function mergeHostUpDomainResult(result: NamecheckResult, hostupResult: HostUpDomainResult): NamecheckResult {
   const isSeDomain = result.category === "domain_se";
 
@@ -224,6 +235,7 @@ export function HomeClient() {
   const [reportError, setReportError] = useState("");
   const [domainError, setDomainError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [showAllDomains, setShowAllDomains] = useState(false);
 
   const domainBase = useMemo(() => normalizeDomainBase(query), [query]);
   const domainNames = useMemo(
@@ -233,6 +245,14 @@ export function HomeClient() {
   const reportWithHostUpDomains = useMemo(
     () => report ? mergeHostUpResultsIntoReport(report, domainResults) : null,
     [report, domainResults],
+  );
+  const alternativeDomains = useMemo(
+    () => domainResults.filter((result) => !result.name.endsWith(".se") && !result.name.endsWith(".com")),
+    [domainResults],
+  );
+  const cheapDomains = useMemo(
+    () => alternativeDomains.filter(isCheapDomain),
+    [alternativeDomains],
   );
   const canSubmit = domainBase.length > 0 && !isLoading;
 
@@ -253,6 +273,7 @@ export function HomeClient() {
     setDomainError("");
     setReport(null);
     setDomainResults([]);
+    setShowAllDomains(false);
 
     const [reportResponse, domainResponse] = await Promise.allSettled([
       fetch("/api/namecheck", {
@@ -380,22 +401,24 @@ export function HomeClient() {
 
       {reportWithHostUpDomains ? <ReportView report={reportWithHostUpDomains} /> : null}
 
-      {isLoading ? (
-        <div className="flex items-center gap-3 rounded-lg border border-[#d8d6c8] bg-white px-5 py-4 text-sm text-[#58655e] shadow-sm">
-          <span className="h-5 w-5 animate-spin rounded-full border-2 border-[#c6c8ba] border-t-[#173f32]" />
-          Hämtar AI-rapport, sociala kontroller och domäner...
-        </div>
-      ) : null}
-
-      {(domainResults.length > 0 || domainError) ? (
-        <section className="space-y-5">
-          <div>
-            <p className="text-sm font-semibold uppercase tracking-[0.14em] text-[#54665c]">
-              HostUp domänsökning
-            </p>
-            <h2 className="mt-2 text-2xl font-semibold sm:text-3xl">
-              Tillgängliga domäner för ditt företagsnamn
-            </h2>
+      {reportWithHostUpDomains && (alternativeDomains.length > 0 || domainError) ? (
+        <section className="space-y-4 rounded-lg border border-[#d8d6c8] bg-white p-5 shadow-sm">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+            <div>
+              <p className="text-sm font-semibold uppercase tracking-[0.14em] text-[#54665c]">
+                HostUp domäner
+              </p>
+              <h2 className="mt-1 text-2xl font-semibold">Fler domänalternativ</h2>
+            </div>
+            {alternativeDomains.length > 0 ? (
+              <button
+                type="button"
+                onClick={() => setShowAllDomains((current) => !current)}
+                className="inline-flex min-h-10 items-center justify-center rounded-md border border-[#d8d6c8] bg-[#f7f7f2] px-4 text-sm font-semibold text-[#15201b] transition hover:bg-[#ecede3]"
+              >
+                {showAllDomains ? "Visa färre" : "Visa alla domäner"}
+              </button>
+            ) : null}
           </div>
 
           {domainError ? (
@@ -404,86 +427,59 @@ export function HomeClient() {
             </p>
           ) : null}
 
-          {domainResults.length > 0 ? (
-            <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-              {domainResults.map((result) => {
-                const tld = tldFor(result.name);
-                const needsRegistryRequirements = REGISTRY_REQUIREMENTS.has(tld);
+          {cheapDomains.length > 0 ? (
+            <div className="flex gap-3 overflow-x-auto pb-1">
+              {cheapDomains.map((result) => (
+                <article
+                  key={result.name}
+                  className="min-w-56 rounded-lg border border-emerald-200 bg-emerald-50 p-4 text-emerald-950"
+                >
+                  <p className="break-words font-semibold">{result.name}</p>
+                  <p className="mt-2 text-sm font-semibold text-emerald-800">{formatPrice(result)}</p>
+                  <p className="mt-1 text-xs text-emerald-900">Ledig via HostUp</p>
+                </article>
+              ))}
+            </div>
+          ) : alternativeDomains.length > 0 ? (
+            <p className="text-sm leading-6 text-[#58655e]">
+              Inga lediga alternativ under 60 kr första året hittades i den här sökningen.
+            </p>
+          ) : null}
 
-                return (
-                  <article
-                    key={result.name}
-                    className={`rounded-lg border p-5 shadow-sm ${
-                      result.available
-                        ? "border-emerald-200 bg-emerald-50"
-                        : "border-rose-200 bg-rose-50"
-                    }`}
-                  >
-                    <div className="flex items-start justify-between gap-3">
-                      <div>
-                        <h3 className="break-words text-xl font-semibold">{result.name}</h3>
-                        <p className={`mt-3 text-3xl font-semibold ${
-                          result.available ? "text-emerald-800" : "text-rose-800"
-                        }`}
-                        >
-                          {result.available ? "Ledig!" : "Upptagen"}
-                        </p>
-                      </div>
-                      <span className={`rounded-full px-3 py-1 text-xs font-semibold ${
-                        result.available
-                          ? "bg-emerald-100 text-emerald-900"
-                          : "bg-rose-100 text-rose-900"
-                      }`}
-                      >
-                        .{tld}
-                      </span>
-                    </div>
-
-                    {result.available ? (
-                      <>
-                        <p className="mt-4 text-2xl font-semibold text-[#15201b]">
-                          {formatPrice(result)}
-                        </p>
-                        {needsRegistryRequirements ? (
-                          <p className="mt-3 text-xs leading-5 text-[#58655e]">
-                            Kräver telefonnummer, personnummer/org.nr och godkännande av registreringsvillkor
-                          </p>
-                        ) : null}
-                        {result.requirements.length > 0 ? (
-                          <ul className="mt-3 space-y-1 text-xs leading-5 text-[#58655e]">
-                            {result.requirements.map((requirement) => (
-                              <li key={requirement}>{requirement}</li>
-                            ))}
-                          </ul>
-                        ) : null}
-                        {/* TODO: Köp-flöde (registrering + nameservers via HostUp) */}
-                        <button
-                          type="button"
-                          disabled={!result.canRegister}
-                          className="mt-5 min-h-12 w-full rounded-md bg-blue-600 px-5 font-semibold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-[#9aa49e]"
-                        >
-                          Köp nu
-                        </button>
-                      </>
-                    ) : (
-                      <>
-                        <p className="mt-4 text-sm leading-6 text-[#5f2a31]">
-                          {result.reason ?? "Domänen är inte tillgänglig."}
-                        </p>
-                        {needsRegistryRequirements ? (
-                          <p className="mt-3 text-xs leading-5 text-[#6d4c50]">
-                            Kräver telefonnummer, personnummer/org.nr och godkännande av registreringsvillkor
-                          </p>
-                        ) : null}
-                      </>
-                    )}
-                  </article>
-                );
-              })}
+          {showAllDomains ? (
+            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+              {alternativeDomains.map((result) => (
+                <article
+                  key={result.name}
+                  className={`rounded-lg border p-4 ${
+                    result.available
+                      ? "border-emerald-200 bg-emerald-50 text-emerald-950"
+                      : "border-rose-200 bg-rose-50 text-rose-950"
+                  }`}
+                >
+                  <div className="flex items-start justify-between gap-2">
+                    <p className="break-words text-sm font-semibold">{result.name}</p>
+                    <span className="shrink-0 rounded-full bg-white/70 px-2 py-1 text-xs font-semibold">
+                      {result.available ? "Ledig" : "Upptagen"}
+                    </span>
+                  </div>
+                  <p className="mt-2 text-sm text-[#3f4a44]">
+                    {result.available ? formatPrice(result) : result.reason ?? "Inte tillgänglig"}
+                  </p>
+                </article>
+              ))}
             </div>
           ) : null}
         </section>
       ) : null}
+
+      {isLoading ? (
+        <div className="flex items-center gap-3 rounded-lg border border-[#d8d6c8] bg-white px-5 py-4 text-sm text-[#58655e] shadow-sm">
+          <span className="h-5 w-5 animate-spin rounded-full border-2 border-[#c6c8ba] border-t-[#173f32]" />
+          Hämtar AI-rapport, sociala kontroller och domäner...
+        </div>
+      ) : null}
+
     </>
   );
 }
