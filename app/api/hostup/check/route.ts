@@ -88,6 +88,14 @@ function extractPollUrl(payload: unknown): string | null {
   return new URL(pollUrl, HOSTUP_AVAILABILITY_URL).toString();
 }
 
+function extractPollUrlFromResponse(response: Response, payload: unknown): string | null {
+  const pollUrl = extractPollUrl(payload)
+    ?? readString(response.headers.get("Location"))
+    ?? readString(response.headers.get("location"));
+
+  return pollUrl ? new URL(pollUrl, HOSTUP_AVAILABILITY_URL).toString() : null;
+}
+
 function extractRecords(payload: unknown): HostUpApiRecord[] {
   if (Array.isArray(payload)) {
     return payload.filter(isRecord);
@@ -229,7 +237,7 @@ async function resolveHostUpAvailability(names: string[]): Promise<HostUpDomainR
   let payload = await readJson(initialResponse);
 
   if (initialResponse.status === 202) {
-    const pollUrl = extractPollUrl(payload);
+    const pollUrl = extractPollUrlFromResponse(initialResponse, payload);
 
     if (!pollUrl) {
       throw new Error("HostUp köade svaret men skickade ingen pollUrl.");
@@ -261,6 +269,10 @@ async function resolveHostUpAvailability(names: string[]): Promise<HostUpDomainR
 }
 
 export async function POST(request: Request) {
+  if (!process.env.HOSTUP_API_KEY) {
+    return NextResponse.json({ error: "HOSTUP_API_KEY is missing" }, { status: 500 });
+  }
+
   let body: unknown;
 
   try {
