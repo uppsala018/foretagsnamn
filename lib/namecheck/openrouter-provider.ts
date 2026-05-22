@@ -7,16 +7,12 @@ import {
 import type { AiBrandAnalysis, BrandRisk, NamecheckResult } from "./types";
 
 const OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions";
-const DEFAULT_MODEL = "deepseek/deepseek-v4-flash:free";
-const FALLBACK_MODELS = [
-  "openrouter/free",
-  "nvidia/nemotron-3-super-120b-a12b:free",
-];
-const UNSUPPORTED_MODELS = new Set([
-  "openrouter/tencent/hy3-preview",
-  "tencent/hy3-preview",
+const MODELS = [
+  "deepseek/deepseek-v4-flash:free",
+  "google/gemini-flash-1.5:free",
+  "qwen/qwen2.5-72b-instruct:free",
   "openai/gpt-4o-mini",
-]);
+];
 const TIMEOUT_MS = 25_000;
 const MAX_CONTENT_LENGTH = 8_000;
 const MAX_ITEM_LENGTH = 180;
@@ -38,15 +34,11 @@ function uniqueModels(models: string[]): string[] {
 export function getOpenRouterModel(): string {
   const configuredModel = process.env.OPENROUTER_MODEL?.trim();
 
-  if (!configuredModel || UNSUPPORTED_MODELS.has(configuredModel)) {
-    return DEFAULT_MODEL;
-  }
-
-  return configuredModel;
+  return configuredModel || MODELS[0];
 }
 
 function getOpenRouterModelCandidates(): string[] {
-  return uniqueModels([getOpenRouterModel(), ...FALLBACK_MODELS]);
+  return uniqueModels([getOpenRouterModel(), ...MODELS]);
 }
 
 export function hasOpenRouterConfig(): boolean {
@@ -191,16 +183,20 @@ async function requestOpenRouterAnalysis(
   const timeout = setTimeout(() => controller.abort(), TIMEOUT_MS);
 
   try {
+    console.log(`OpenRouter försöker modell: ${model}`);
+
     const response = await fetch(OPENROUTER_URL, {
       method: "POST",
       headers: {
         Authorization: `Bearer ${apiKey}`,
+        "HTTP-Referer": "https://foretagsnamn.mad.onl",
+        "X-Title": "Företagsnamn.app",
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
         model,
         reasoning: { exclude: true },
-        temperature: 0.2,
+        temperature: 0.7,
         max_tokens: 800,
         messages: [
           {
@@ -219,9 +215,11 @@ async function requestOpenRouterAnalysis(
 
     if (!response.ok) {
       const errorText = await response.text();
+      console.warn(`OpenRouter modell ${model} misslyckades: ${response.status} - ${errorText}`);
       throw new Error(`OpenRouter model ${model} HTTP status ${response.status}. ${errorText.slice(0, 500)}`);
     }
 
+    console.log(`OpenRouter lyckades med modell: ${model}`);
     const payload = await response.json() as OpenRouterResponse;
     const content = readAssistantContent(payload);
     const analysis = normalizeAiBrandAnalysis(extractJson(content));
@@ -270,6 +268,7 @@ export async function analyzeBrandNameWithOpenRouter(
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : "Unknown OpenRouter error.";
       lastError = error instanceof Error ? error : new Error(errorMessage);
+      console.error(`OpenRouter fel på modell ${model}:`, error);
 
       recordProviderDebug("openrouter", {
         configured: true,
@@ -286,6 +285,7 @@ export async function analyzeBrandNameWithOpenRouter(
     }
   }
 
+  console.error("Alla OpenRouter-modeller misslyckades", lastError);
   throw lastError ?? new Error("OpenRouter provider failed.");
 }
 
