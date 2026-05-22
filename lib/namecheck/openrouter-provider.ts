@@ -8,6 +8,10 @@ import type { AiBrandAnalysis, BrandRisk, NamecheckResult } from "./types";
 
 const OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions";
 const DEFAULT_MODEL = "deepseek/deepseek-v4-flash:free";
+const FALLBACK_MODELS = [
+  "openrouter/free",
+  "nvidia/nemotron-3-super-120b-a12b:free",
+];
 const UNSUPPORTED_MODELS = new Set([
   "openrouter/tencent/hy3-preview",
   "tencent/hy3-preview",
@@ -27,6 +31,10 @@ type OpenRouterResponse = {
   choices?: OpenRouterMessage[];
 };
 
+function uniqueModels(models: string[]): string[] {
+  return [...new Set(models.filter(Boolean))];
+}
+
 export function getOpenRouterModel(): string {
   const configuredModel = process.env.OPENROUTER_MODEL?.trim();
 
@@ -35,6 +43,10 @@ export function getOpenRouterModel(): string {
   }
 
   return configuredModel;
+}
+
+function getOpenRouterModelCandidates(): string[] {
+  return uniqueModels([getOpenRouterModel(), ...FALLBACK_MODELS]);
 }
 
 export function hasOpenRouterConfig(): boolean {
@@ -75,7 +87,13 @@ function normalizeRisk(value: unknown): BrandRisk {
 }
 
 function extractJson(text: string): unknown {
-  const clamped = text.slice(0, MAX_CONTENT_LENGTH).trim();
+  const clamped = text
+    .slice(0, MAX_CONTENT_LENGTH)
+    .trim()
+    .replace(/^```json\s*/i, "")
+    .replace(/^```\s*/i, "")
+    .replace(/```$/i, "")
+    .trim();
 
   try {
     return JSON.parse(clamped);
@@ -163,34 +181,16 @@ function buildPrompt(name: string, reportResults: NamecheckResult[]): string {
   });
 }
 
-export async function analyzeBrandNameWithOpenRouter(
+async function requestOpenRouterAnalysis(
+  apiKey: string,
+  model: string,
   name: string,
   reportResults: NamecheckResult[],
 ): Promise<AiBrandAnalysis> {
-  const apiKey = process.env.OPENROUTER_API_KEY;
-  let recordedHttpError = false;
-
-  if (!apiKey) {
-    recordProviderDebug("openrouter", {
-      configured: false,
-      lastStatus: null,
-      lastError: "OpenRouter configuration is missing.",
-      lastRequestUrl: OPENROUTER_URL,
-    });
-    throw new Error("OpenRouter configuration is missing.");
-  }
-
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), TIMEOUT_MS);
 
   try {
-    recordProviderDebug("openrouter", {
-      configured: true,
-      lastStatus: null,
-      lastError: null,
-      lastRequestUrl: OPENROUTER_URL,
-    });
-
     const response = await fetch(OPENROUTER_URL, {
       method: "POST",
       headers: {
@@ -198,14 +198,15 @@ export async function analyzeBrandNameWithOpenRouter(
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: getOpenRouterModel(),
+        model,
+        reasoning: { exclude: true },
         temperature: 0.2,
-        max_tokens: 700,
+        max_tokens: 800,
         messages: [
           {
             role: "system",
             content:
-              "Du är en svensk varumärkes- och namnriskassistent. Du får inte påstå att du har kontrollerat Bolagsverket, varumärkesregister eller sociala plattformar. Returnera strikt JSON.",
+              "Du är en svensk varumärkes- och namnriskassistent. Du får inte påstå att du har kontrollerat Bolagsverket, varumärkesregister eller sociala plattformar. Returnera strikt JSON utan markdown.",
           },
           {
             role: "user",
@@ -218,20 +219,12 @@ export async function analyzeBrandNameWithOpenRouter(
 
     if (!response.ok) {
       const errorText = await response.text();
-      const errorMessage = `OpenRouter HTTP status ${response.status}. ${errorText.slice(0, 500)}`;
-      recordProviderDebug("openrouter", {
-        configured: true,
-        lastStatus: response.status,
-        lastError: errorMessage,
-        lastRequestUrl: OPENROUTER_URL,
-      });
-      recordedHttpError = true;
-      console.warn("OpenRouter provider failed.", {
-        status: response.status,
-        error: summarizeProviderError(errorMessage),
-      });
-      throw new Error(errorMessage);
+      throw new Error(`OpenRouter model ${model} HTTP status ${response.status}. ${errorText.slice(0, 500)}`);
     }
+
+    const payload = await response.json() as OpenRouterResponse;
+    const content = readAssistantContent(payload);
+    const analysis = normalizeAiBrandAnalysis(extractJson(content));
 
     recordProviderDebug("openrouter", {
       configured: true,
@@ -240,27 +233,60 @@ export async function analyzeBrandNameWithOpenRouter(
       lastRequestUrl: OPENROUTER_URL,
     });
 
-    const payload = await response.json() as OpenRouterResponse;
-    const content = readAssistantContent(payload);
-
-    return normalizeAiBrandAnalysis(extractJson(content));
-  } catch (error) {
-    if (error instanceof Error && !recordedHttpError) {
-      recordProviderDebug("openrouter", {
-        configured: true,
-        lastStatus: null,
-        lastError: error.message,
-        lastRequestUrl: OPENROUTER_URL,
-      });
-      console.warn("OpenRouter provider failed.", {
-        status: null,
-        error: summarizeProviderError(error.message),
-      });
-    }
-    throw error;
+    return analysis;
   } finally {
     clearTimeout(timeout);
   }
+}
+
+export async function analyzeBrandNameWithOpenRouter(
+  name: string,
+  reportResults: NamecheckResult[],
+): Promise<AiBrandAnalysis> {
+  const apiKey = process.env.OPENROUTER_API_KEY;
+
+  if (!apiKey) {
+    recordProviderDebug("openrouter", {
+      configured: false,
+      lastStatus: null,
+      lastError: "OpenRouter configuration is missing.",
+      lastRequestUrl: OPENROUTER_URL,
+    });
+    throw new Error("OpenRouter configuration is missing.");
+  }
+
+  let lastError: Error | null = null;
+
+  for (const model of getOpenRouterModelCandidates()) {
+    recordProviderDebug("openrouter", {
+      configured: true,
+      lastStatus: null,
+      lastError: null,
+      lastRequestUrl: OPENROUTER_URL,
+    });
+
+    try {
+      return await requestOpenRouterAnalysis(apiKey, model, name, reportResults);
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : "Unknown OpenRouter error.";
+      lastError = error instanceof Error ? error : new Error(errorMessage);
+
+      recordProviderDebug("openrouter", {
+        configured: true,
+        lastStatus: errorMessage.match(/HTTP status (\d+)/)?.[1]
+          ? Number(errorMessage.match(/HTTP status (\d+)/)?.[1])
+          : null,
+        lastError: errorMessage,
+        lastRequestUrl: OPENROUTER_URL,
+      });
+      console.warn("OpenRouter provider failed.", {
+        model,
+        error: summarizeProviderError(errorMessage),
+      });
+    }
+  }
+
+  throw lastError ?? new Error("OpenRouter provider failed.");
 }
 
 export async function probeOpenRouterProvider(): Promise<void> {
@@ -276,65 +302,20 @@ export async function probeOpenRouterProvider(): Promise<void> {
     return;
   }
 
-  const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), TIMEOUT_MS);
-
   try {
-    const response = await fetch(OPENROUTER_URL, {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${apiKey}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model: getOpenRouterModel(),
-        temperature: 0,
-        max_tokens: 80,
-        messages: [
-          {
-            role: "user",
-            content: "Returnera endast JSON: {\"ok\":true}",
-          },
-        ],
-      }),
-      signal: controller.signal,
-    });
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      const errorMessage = `OpenRouter HTTP status ${response.status}. ${errorText.slice(0, 500)}`;
-      recordProviderDebug("openrouter", {
-        configured: true,
-        lastStatus: response.status,
-        lastError: errorMessage,
-        lastRequestUrl: OPENROUTER_URL,
-      });
-      console.warn("OpenRouter provider probe failed.", {
-        status: response.status,
-        error: summarizeProviderError(errorMessage),
-      });
-      return;
-    }
-
-    recordProviderDebug("openrouter", {
-      configured: true,
-      lastStatus: response.status,
-      lastError: null,
-      lastRequestUrl: OPENROUTER_URL,
-    });
+    await requestOpenRouterAnalysis(apiKey, getOpenRouterModel(), "Testbolag", []);
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : "Unknown OpenRouter network error.";
     recordProviderDebug("openrouter", {
       configured: true,
-      lastStatus: null,
+      lastStatus: errorMessage.match(/HTTP status (\d+)/)?.[1]
+        ? Number(errorMessage.match(/HTTP status (\d+)/)?.[1])
+        : null,
       lastError: errorMessage,
       lastRequestUrl: OPENROUTER_URL,
     });
     console.warn("OpenRouter provider probe failed.", {
-      status: null,
       error: summarizeProviderError(errorMessage),
     });
-  } finally {
-    clearTimeout(timeout);
   }
 }
