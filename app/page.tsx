@@ -1,3 +1,4 @@
+// HostUp integration – använder testnyckel. Byt till live-nyckel senare.
 import { HomeClient } from "./page-client";
 
 const FAQ_ITEMS = [
@@ -9,7 +10,7 @@ const FAQ_ITEMS = [
   {
     question: "Kan ni garantera att namnet är ledigt?",
     answer:
-      "Nej. Resultatet är en teknisk förhandskontroll. Domäner kan verifieras via Namecheap när API är konfigurerat, men vissa TLD:er, till exempel .se, kan sakna direkt Namecheap-verifiering och visas då som indikativa.",
+      "Nej. Resultatet är en teknisk förhandskontroll. Domäner kontrolleras via HostUp när API:t svarar, men slutlig registrering och villkor bekräftas i köpflödet.",
   },
   {
     question: "Vad ingår i djupsökningen?",
@@ -73,7 +74,7 @@ function TrustSection() {
   const items = [
     {
       title: "Domäner",
-      text: "Domäner kontrolleras via Namecheap när API är konfigurerat. Vissa TLD:er kan sakna direkt Namecheap-verifiering och markeras då som indikativa.",
+      text: "Domäner kontrolleras via HostUp och visas med tillgänglighet, pris och registreringskrav när API:t returnerar dem.",
     },
     {
       title: "Sociala medier",
