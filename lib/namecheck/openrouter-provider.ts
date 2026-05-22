@@ -7,7 +7,12 @@ import {
 import type { AiBrandAnalysis, BrandRisk, NamecheckResult } from "./types";
 
 const OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions";
-const DEFAULT_MODEL = "tencent/hy3-preview";
+const DEFAULT_MODEL = "deepseek/deepseek-v4-flash:free";
+const UNSUPPORTED_MODELS = new Set([
+  "openrouter/tencent/hy3-preview",
+  "tencent/hy3-preview",
+  "openai/gpt-4o-mini",
+]);
 const TIMEOUT_MS = 25_000;
 const MAX_CONTENT_LENGTH = 8_000;
 const MAX_ITEM_LENGTH = 180;
@@ -23,7 +28,13 @@ type OpenRouterResponse = {
 };
 
 export function getOpenRouterModel(): string {
-  return process.env.OPENROUTER_MODEL || DEFAULT_MODEL;
+  const configuredModel = process.env.OPENROUTER_MODEL?.trim();
+
+  if (!configuredModel || UNSUPPORTED_MODELS.has(configuredModel)) {
+    return DEFAULT_MODEL;
+  }
+
+  return configuredModel;
 }
 
 export function hasOpenRouterConfig(): boolean {
