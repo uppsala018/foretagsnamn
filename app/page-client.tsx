@@ -4,6 +4,22 @@ import { FormEvent, useMemo, useState } from "react";
 import type { NamecheckReport, NamecheckResult, BrandRisk } from "@/lib/namecheck/types";
 import { MAX_QUERY_LENGTH } from "@/lib/namecheck/validation";
 import { getPrice, formatPrice as fmtSEK } from "@/lib/pricing";
+import { db } from "@/lib/firebase";
+import { collection, addDoc, serverTimestamp } from "firebase/firestore";
+
+async function saveEmailAndSearch(email: string, searchQuery: string) {
+  if (!email || !email.includes("@")) return;
+  try {
+    await addDoc(collection(db, "leads"), {
+      email,
+      searchQuery,
+      source: "foretagsnamn",
+      createdAt: serverTimestamp(),
+    });
+  } catch (e) {
+    console.error("Firestore save failed:", e);
+  }
+}
 
 const DOMAIN_SUFFIXES = [
   ".se", ".nu", ".com", ".io", ".net", ".org", ".xyz", ".eu", ".online", ".store", ".blog",
@@ -501,6 +517,8 @@ function ResultsSection({ report, domainResults, showAll, onToggle, domainError,
   query: string;
 }) {
   const risk = getOverallRisk(report);
+  const [leadEmail, setLeadEmail] = useState("");
+  const [emailSaved, setEmailSaved] = useState(false);
 
   return (
     <section aria-live="polite" style={{ maxWidth: 700, margin: "0 auto", padding: "0 24px 60px" }}>
@@ -537,6 +555,57 @@ function ResultsSection({ report, domainResults, showAll, onToggle, domainError,
       {/* AI */}
       <div style={{ marginBottom: 14 }}>
         <AiCard report={report} />
+
+        {/* Email capture */}
+        {!emailSaved ? (
+          <div style={{
+            marginTop: "16px", padding: "16px 18px",
+            background: "rgba(45,125,210,0.08)",
+            borderRadius: "10px",
+            border: "1px solid rgba(45,125,210,0.2)",
+          }}>
+            <p style={{ fontSize: "13px", color: "#8b9bbf", marginBottom: "10px" }}>
+              Spara resultatet — ange din e-post så skickar vi rapporten
+            </p>
+            <div style={{ display: "flex", gap: "8px" }}>
+              <input
+                type="email"
+                placeholder="din@epost.se"
+                value={leadEmail}
+                onChange={e => setLeadEmail(e.target.value)}
+                onKeyDown={async e => {
+                  if (e.key === "Enter") {
+                    await saveEmailAndSearch(leadEmail, query);
+                    setEmailSaved(true);
+                  }
+                }}
+                style={{
+                  flex: 1, padding: "9px 14px", borderRadius: "8px",
+                  border: "1px solid rgba(45,125,210,0.3)",
+                  background: "rgba(255,255,255,0.05)",
+                  color: "#f0f4ff", fontSize: "14px", fontFamily: "inherit", outline: "none",
+                }}
+              />
+              <button
+                onClick={async () => {
+                  await saveEmailAndSearch(leadEmail, query);
+                  setEmailSaved(true);
+                }}
+                style={{
+                  background: "#f5c842", color: "#0a0e1a", border: "none",
+                  padding: "9px 18px", borderRadius: "8px",
+                  fontSize: "13px", fontWeight: 700, cursor: "pointer",
+                }}
+              >
+                Spara →
+              </button>
+            </div>
+          </div>
+        ) : (
+          <p style={{ fontSize: "13px", color: "#4ade80", marginTop: "12px" }}>
+            ✓ Sparat! Vi skickar resultatet till {leadEmail}
+          </p>
+        )}
       </div>
 
       {/* Unlock bar */}
