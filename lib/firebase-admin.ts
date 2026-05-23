@@ -14,7 +14,12 @@ let firestore: Firestore | null = null;
 function getFirebaseAdminConfig(): FirebaseAdminConfig | null {
   const projectId = process.env.FIREBASE_PROJECT_ID;
   const clientEmail = process.env.FIREBASE_CLIENT_EMAIL;
-  const privateKey = process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, "\n");
+  const rawKey = process.env.FIREBASE_PRIVATE_KEY;
+  const privateKey = rawKey
+    ? rawKey.includes("\\n")
+      ? rawKey.replace(/\\n/g, "\n")
+      : rawKey
+    : undefined;
 
   if (!projectId || !clientEmail || !privateKey) {
     return null;
