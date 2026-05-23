@@ -17,7 +17,7 @@ const STATUS_ROWS: Array<{
   { key: "stripeConfigured", label: "Stripe konfigurerat" },
   { key: "firebaseConfigured", label: "Firebase konfigurerat" },
   { key: "openrouterConfigured", label: "OpenRouter konfigurerat" },
-  { key: "hostupConfigured", label: "HostUp konfigurerat" },
+  { key: "hostupConfigured", label: "Domänplattform konfigurerad" },
 ];
 
 export function DiagnosticsClient() {

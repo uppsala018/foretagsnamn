@@ -1,26 +1,26 @@
 import type { BrandRisk, NamecheckResult, ResultStatus } from "@/lib/namecheck/types";
 
 const STATUS_LABELS: Record<ResultStatus, string> = {
-  available: "Möjligen ledigt",
-  taken: "Möjligen upptaget",
-  uncertain: "Osäkert",
-  error: "Fel",
+  available:   "Möjligen ledigt",
+  taken:       "Möjligen upptaget",
+  uncertain:   "Osäkert",
+  error:       "Fel",
   not_checked: "Ej kontrollerat",
 };
 
 const RISK_LABELS: Record<BrandRisk, string> = {
-  low: "Låg risk",
-  medium: "Medelrisk",
-  high: "Hög risk",
+  low:       "Låg risk",
+  medium:    "Medelrisk",
+  high:      "Hög risk",
   uncertain: "Osäker risk",
 };
 
-const STATUS_STYLES: Record<ResultStatus, string> = {
-  available: "border-emerald-200 bg-emerald-50 text-emerald-900",
-  taken: "border-rose-200 bg-rose-50 text-rose-900",
-  uncertain: "border-amber-200 bg-amber-50 text-amber-900",
-  error: "border-red-200 bg-red-50 text-red-900",
-  not_checked: "border-stone-200 bg-stone-100 text-stone-700",
+const STATUS_COLORS: Record<ResultStatus, { bg: string; color: string; border: string }> = {
+  available:   { bg: "rgba(34,197,94,0.12)",  color: "#4ade80", border: "rgba(34,197,94,0.2)" },
+  taken:       { bg: "rgba(239,68,68,0.12)",  color: "#f87171", border: "rgba(239,68,68,0.2)" },
+  uncertain:   { bg: "rgba(245,158,11,0.12)", color: "#fbbf24", border: "rgba(245,158,11,0.2)" },
+  error:       { bg: "rgba(239,68,68,0.12)",  color: "#f87171", border: "rgba(239,68,68,0.2)" },
+  not_checked: { bg: "rgba(74,85,104,0.15)",  color: "var(--text-muted)", border: "rgba(74,85,104,0.2)" },
 };
 
 const VERKSAMT_URL = "https://verksamt.se/bolagsverket/hjalp-att-valja-foretagsnamn";
@@ -31,51 +31,75 @@ type DomainMetadata = NonNullable<NamecheckResult["metadata"]> & {
   registryInfo?: string;
 };
 
+function StatusPill({ status, label }: { status: ResultStatus; label: string }) {
+  const c = STATUS_COLORS[status];
+  return (
+    <span style={{
+      background: c.bg, color: c.color,
+      border: `1px solid ${c.border}`,
+      borderRadius: 20, padding: "3px 10px",
+      fontSize: 12, fontWeight: 500, whiteSpace: "nowrap",
+    }}>
+      {label}
+    </span>
+  );
+}
+
 function AiAssessmentDetails({ result }: { result: NamecheckResult }) {
   const analysis = result.metadata?.aiAnalysis;
+  if (!analysis) return null;
 
-  if (!analysis) {
-    return null;
-  }
+  const riskC = STATUS_COLORS[
+    analysis.overallRisk === "low" ? "available"
+    : analysis.overallRisk === "high" ? "taken"
+    : analysis.overallRisk === "medium" ? "uncertain"
+    : "not_checked"
+  ];
 
   return (
-    <div className="mt-4 space-y-3">
-      <span className={`inline-flex rounded-full border px-3 py-1 text-xs font-semibold ${STATUS_STYLES[result.status]}`}>
+    <div style={{ marginTop: 14 }}>
+      <span style={{
+        background: riskC.bg, color: riskC.color,
+        border: `1px solid ${riskC.border}`,
+        borderRadius: 20, padding: "3px 10px",
+        fontSize: 12, fontWeight: 500,
+      }}>
         {RISK_LABELS[analysis.overallRisk]}
       </span>
 
       {analysis.strengths.length > 0 ? (
-        <div>
-          <p className="text-xs font-semibold uppercase tracking-[0.12em] text-[#58655e]">Styrkor</p>
-          <ul className="mt-2 space-y-1 text-sm leading-6 text-[#3f4a44]">
-            {analysis.strengths.map((strength) => (
-              <li key={strength}>{strength}</li>
+        <div style={{ marginTop: 12 }}>
+          <p style={{ fontSize: 11, textTransform: "uppercase", letterSpacing: "0.08em", color: "#7ab3e8", marginBottom: 6 }}>Styrkor</p>
+          <ul style={{ listStyle: "none", margin: 0, padding: 0 }}>
+            {analysis.strengths.map((s) => (
+              <li key={s} style={{ fontSize: 12, color: "var(--text-secondary)", lineHeight: 1.6 }}>✓ {s}</li>
             ))}
           </ul>
         </div>
       ) : null}
 
       {analysis.warnings.length > 0 ? (
-        <div>
-          <p className="text-xs font-semibold uppercase tracking-[0.12em] text-[#58655e]">Varningar</p>
-          <ul className="mt-2 space-y-1 text-sm leading-6 text-[#3f4a44]">
-            {analysis.warnings.map((warning) => (
-              <li key={warning}>{warning}</li>
+        <div style={{ marginTop: 10 }}>
+          <p style={{ fontSize: 11, textTransform: "uppercase", letterSpacing: "0.08em", color: "#7ab3e8", marginBottom: 6 }}>Varningar</p>
+          <ul style={{ listStyle: "none", margin: 0, padding: 0 }}>
+            {analysis.warnings.map((w) => (
+              <li key={w} style={{ fontSize: 12, color: "var(--text-secondary)", lineHeight: 1.6 }}>⚠ {w}</li>
             ))}
           </ul>
         </div>
       ) : null}
 
       {analysis.suggestedAlternatives.length > 0 ? (
-        <div>
-          <p className="text-xs font-semibold uppercase tracking-[0.12em] text-[#58655e]">Alternativ</p>
-          <div className="mt-2 flex flex-wrap gap-2">
-            {analysis.suggestedAlternatives.map((alternative) => (
-              <span key={alternative} className="rounded-full border border-[#d8d6c8] bg-[#f7f7f2] px-3 py-1 text-xs text-[#3f4a44]">
-                {alternative}
-              </span>
-            ))}
-          </div>
+        <div style={{ marginTop: 10, display: "flex", flexWrap: "wrap", gap: 6 }}>
+          {analysis.suggestedAlternatives.map((alt) => (
+            <span key={alt} style={{
+              fontSize: 12, color: "#7ab3e8",
+              border: "1px solid rgba(45,125,210,0.25)",
+              borderRadius: 20, padding: "3px 10px",
+            }}>
+              {alt}
+            </span>
+          ))}
         </div>
       ) : null}
     </div>
@@ -84,107 +108,127 @@ function AiAssessmentDetails({ result }: { result: NamecheckResult }) {
 
 export function ResultCard({ result }: { result: NamecheckResult }) {
   const domainMetadata = result.metadata as DomainMetadata | undefined;
-  const isHostUpDomainCard = (result.category === "domain_se" || result.category === "domain_com")
-    && Boolean(domainMetadata?.domainPriceLabel);
-  const statusLabel = isHostUpDomainCard
-    ? result.status === "available"
-      ? "Ledig"
-      : "Upptagen"
+  const isHostUpDomainCard =
+    (result.category === "domain_se" || result.category === "domain_com") &&
+    Boolean(domainMetadata?.domainPriceLabel);
+  const statusLabelText = isHostUpDomainCard
+    ? result.status === "available" ? "Ledig" : "Upptagen"
     : STATUS_LABELS[result.status];
 
   return (
-    <article className="rounded-lg border border-[#d8d6c8] bg-white p-5 shadow-sm">
-      <div className="flex items-start justify-between gap-3">
-        <div>
-          <h3 className="text-lg font-semibold">{result.label}</h3>
-          <p className="mt-1 break-words text-sm text-[#58655e]">{result.value}</p>
+    <article style={{
+      background: "var(--bg-card)",
+      border: "1px solid var(--border)",
+      borderRadius: 12, padding: "16px 18px",
+    }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 10 }}>
+        <div style={{ minWidth: 0 }}>
+          <h3 style={{ fontSize: 14, fontWeight: 600, color: "var(--text-primary)", marginBottom: 4 }}>{result.label}</h3>
+          <p style={{ fontSize: 12, color: "var(--text-muted)", wordBreak: "break-all" }}>{result.value}</p>
         </div>
-        <span className={`shrink-0 rounded-full border px-3 py-1 text-xs font-semibold ${STATUS_STYLES[result.status]}`}>
-          {statusLabel}
-        </span>
+        <StatusPill status={result.status} label={statusLabelText} />
       </div>
-      <p className="mt-4 text-sm leading-6 text-[#3f4a44]">{result.summary}</p>
+
+      <p style={{ marginTop: 10, fontSize: 13, lineHeight: 1.6, color: "var(--text-secondary)" }}>{result.summary}</p>
+
       {isHostUpDomainCard ? (
-        <div className="mt-4 space-y-3">
-          <p className="text-2xl font-semibold text-[#15201b]">{domainMetadata?.domainPriceLabel}</p>
+        <div style={{ marginTop: 12 }}>
+          <p style={{ fontSize: 20, fontWeight: 600, color: "var(--text-primary)" }}>{domainMetadata?.domainPriceLabel}</p>
           {domainMetadata?.registryInfo ? (
-            <p className="text-xs leading-5 text-[#58655e]">{domainMetadata.registryInfo}</p>
+            <p style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 4, lineHeight: 1.5 }}>{domainMetadata.registryInfo}</p>
           ) : null}
           {result.status === "available" ? (
-            <>
-              {/* TODO: Köp-flöde */}
-              <button
-                type="button"
-                disabled={domainMetadata?.canRegister === false}
-                className="min-h-12 w-full rounded-md bg-blue-600 px-5 font-semibold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-[#9aa49e]"
-              >
-                Köp nu
-              </button>
-            </>
+            <a
+              href={`https://domain.mad.onl?domain=${encodeURIComponent(result.value)}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{
+                display: "block", marginTop: 10,
+                background: "var(--se-blue)", color: "#fff",
+                textAlign: "center", padding: "10px 0",
+                borderRadius: 8, fontSize: 13, fontWeight: 600,
+                textDecoration: "none",
+                opacity: domainMetadata?.canRegister === false ? 0.5 : 1,
+              }}
+            >
+              Köp nu
+            </a>
           ) : null}
         </div>
       ) : null}
+
       {result.category === "ai_assessment" ? (
         <AiAssessmentDetails result={result} />
       ) : null}
+
+      {result.metadata?.warnings && result.metadata.warnings.length > 0 ? (
+        <div style={{ marginTop: 12 }}>
+          <p style={{ fontSize: 11, textTransform: "uppercase", letterSpacing: "0.08em", color: "#7ab3e8", marginBottom: 6 }}>Riskpunkter</p>
+          <ul style={{ listStyle: "none", margin: 0, padding: 0 }}>
+            {result.metadata.warnings.map((w) => (
+              <li key={w} style={{ fontSize: 12, color: "var(--text-secondary)", lineHeight: 1.6 }}>⚠ {w}</li>
+            ))}
+          </ul>
+        </div>
+      ) : null}
+
+      {result.metadata?.suggestions && result.metadata.suggestions.length > 0 ? (
+        <div style={{ marginTop: 10 }}>
+          <p style={{ fontSize: 11, textTransform: "uppercase", letterSpacing: "0.08em", color: "#7ab3e8", marginBottom: 6 }}>Förslag</p>
+          <ul style={{ listStyle: "none", margin: 0, padding: 0 }}>
+            {result.metadata.suggestions.map((s) => (
+              <li key={s} style={{ fontSize: 12, color: "var(--text-secondary)", lineHeight: 1.6 }}>{s}</li>
+            ))}
+          </ul>
+        </div>
+      ) : null}
+
+      {result.metadata?.isPremiumName ? (
+        <p style={{ marginTop: 8, fontSize: 11, color: "var(--amber)" }}>
+          Premiumdomän
+          {result.metadata.premiumRegistrationPrice ? `, registrering ${result.metadata.premiumRegistrationPrice}` : ""}
+          {result.metadata.premiumRenewalPrice ? `, förnyelse ${result.metadata.premiumRenewalPrice}` : ""}
+        </p>
+      ) : null}
+
+      {result.metadata?.warning ? (
+        <p style={{ marginTop: 8, fontSize: 11, color: "var(--amber)" }}>{result.metadata.warning}</p>
+      ) : null}
+
+      {result.details ? (
+        <p style={{ marginTop: 8, fontSize: 11, color: "var(--text-muted)", lineHeight: 1.5 }}>{result.details}</p>
+      ) : null}
+
       {result.checkLabel ? (
-        <p className="mt-3 text-xs font-semibold uppercase tracking-[0.12em] text-[#58655e]">
+        <p style={{ marginTop: 10, fontSize: 11, textTransform: "uppercase", letterSpacing: "0.08em", color: "var(--text-muted)" }}>
           {result.checkLabel}
         </p>
       ) : null}
-      {result.metadata?.isPremiumName ? (
-        <p className="mt-2 text-xs leading-5 text-[#6a746e]">
-          Premiumdomän
-          {result.metadata.premiumRegistrationPrice
-            ? `, registrering ${result.metadata.premiumRegistrationPrice}`
-            : ""}
-          {result.metadata.premiumRenewalPrice
-            ? `, förnyelse ${result.metadata.premiumRenewalPrice}`
-            : ""}
-        </p>
-      ) : null}
-      {result.metadata?.checkedUrl ? (
-        <p className="mt-2 break-words text-xs leading-5 text-[#6a746e]">
-          Kontrollerad URL: {result.metadata.checkedUrl}
-        </p>
-      ) : null}
-      {result.metadata?.warning ? (
-        <p className="mt-2 text-xs leading-5 text-amber-800">{result.metadata.warning}</p>
-      ) : null}
-      {result.metadata?.warnings && result.metadata.warnings.length > 0 ? (
-        <div className="mt-3">
-          <p className="text-xs font-semibold uppercase tracking-[0.12em] text-[#58655e]">Riskpunkter</p>
-          <ul className="mt-2 space-y-1 text-sm leading-6 text-[#3f4a44]">
-            {result.metadata.warnings.map((warning) => (
-              <li key={warning}>{warning}</li>
-            ))}
-          </ul>
-        </div>
-      ) : null}
-      {result.metadata?.suggestions && result.metadata.suggestions.length > 0 ? (
-        <div className="mt-3">
-          <p className="text-xs font-semibold uppercase tracking-[0.12em] text-[#58655e]">Förslag</p>
-          <ul className="mt-2 space-y-1 text-sm leading-6 text-[#3f4a44]">
-            {result.metadata.suggestions.map((suggestion) => (
-              <li key={suggestion}>{suggestion}</li>
-            ))}
-          </ul>
-        </div>
-      ) : null}
-      {result.details ? (
-        <p className="mt-3 text-xs leading-5 text-[#6a746e]">{result.details}</p>
-      ) : null}
+
       {result.category === "company_name" ? (
-        <div className="mt-4 rounded-md border border-[#d8d6c8] bg-[#f7f7f2] p-3">
-          <p className="text-sm font-semibold text-[#15201b]">Kontrollera även hos Verksamt/Bolagsverket</p>
-          <p className="mt-1 text-xs leading-5 text-[#58655e]">
+        <div style={{
+          marginTop: 14,
+          background: "var(--bg-surface)",
+          border: "1px solid var(--border)",
+          borderRadius: 8, padding: "12px 14px",
+        }}>
+          <p style={{ fontSize: 13, fontWeight: 600, color: "var(--text-primary)", marginBottom: 4 }}>
+            Kontrollera även hos Verksamt/Bolagsverket
+          </p>
+          <p style={{ fontSize: 12, color: "var(--text-muted)", marginBottom: 10, lineHeight: 1.5 }}>
             För en officiell bedömning måste namnet prövas av Bolagsverket vid registrering.
           </p>
           <a
             href={VERKSAMT_URL}
             target="_blank"
             rel="noopener noreferrer"
-            className="mt-3 inline-flex rounded-md bg-[#15201b] px-3 py-2 text-xs font-semibold text-white transition hover:bg-[#2c382f]"
+            style={{
+              display: "inline-block",
+              background: "var(--se-blue)", color: "#fff",
+              fontSize: 12, fontWeight: 600,
+              padding: "7px 14px", borderRadius: 7,
+              textDecoration: "none",
+            }}
           >
             Öppna Verksamt/Bolagsverket
           </a>

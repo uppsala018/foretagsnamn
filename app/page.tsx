@@ -1,32 +1,6 @@
-import { HomeClient } from "./page-client";
+"use server";
 
-const FAQ_ITEMS = [
-  {
-    question: "Är detta en officiell Bolagsverket-kontroll?",
-    answer:
-      "Nej. Företagsnamn.app gör en preliminär förhandskontroll av namnformat, särskiljning och riskpunkter. Kontrollera även hos Verksamt/Bolagsverket. För en officiell bedömning måste namnet prövas av Bolagsverket vid registrering.",
-  },
-  {
-    question: "Kan ni garantera att namnet är ledigt?",
-    answer:
-      "Nej. Resultatet är en teknisk förhandskontroll. Domäner kontrolleras via HostUp när API:t svarar, men slutlig registrering och villkor bekräftas i köpflödet.",
-  },
-  {
-    question: "Vad ingår i djupsökningen?",
-    answer:
-      "Djupsökningen skapar en sparad rapport med namnförhandskontroll, domänresultat, indikativa sociala profilkontroller och AI-baserad riskbedömning.",
-  },
-  {
-    question: "Hur sparar jag rapporten som PDF?",
-    answer:
-      "Efter betalning visas rapporten på en utskriftsvänlig sida. Klicka på Skriv ut / spara som PDF och välj PDF i webbläsarens utskriftsdialog.",
-  },
-  {
-    question: "Varför står vissa sociala medier som osäkra?",
-    answer:
-      "Instagram och TikTok kan blockera automatiska kontroller eller returnera otydliga svar. Därför visas sociala resultat som indikativa och bör alltid kontrolleras manuellt.",
-  },
-];
+import { HomeClient } from "./page-client";
 
 function faqJsonLd() {
   return {
@@ -34,138 +8,248 @@ function faqJsonLd() {
     "@type": "FAQPage",
     mainEntity: FAQ_ITEMS.map((item) => ({
       "@type": "Question",
-      name: item.question,
-      acceptedAnswer: {
-        "@type": "Answer",
-        text: item.answer,
-      },
+      name: item.q,
+      acceptedAnswer: { "@type": "Answer", text: item.a },
     })),
   };
 }
 
+const FAQ_ITEMS = [
+  {
+    q: "Är detta en officiell Bolagsverket-kontroll?",
+    a: "Nej. Det här är en preliminär förhandskontroll baserad på namnregler och tillgänglig data. För en officiell bedömning måste namnet prövas av Bolagsverket vid registrering via Verksamt.se.",
+  },
+  {
+    q: "Kan ni garantera att namnet är ledigt?",
+    a: "Nej. Resultatet är en teknisk förhandskoll. Domäner kontrolleras i realtid men kan ändras. Sociala handles är indikativa och bör alltid verifieras manuellt.",
+  },
+  {
+    q: "Vad händer med mina 49 kr om namnet är taget?",
+    a: "Du får full rapport oavsett. Om huvudnamnet är taget ingår 10 AI-genererade alternativ som är lediga — du hittar rätt namn i samma köp.",
+  },
+  {
+    q: "Var registreras domänerna?",
+    a: "Via vår domänplattform domain.mad.onl — du hanterar och äger domänen direkt hos oss, utan mellanhänder.",
+  },
+];
+
 export default function Home() {
   return (
-    <main className="min-h-screen bg-[#f7f7f2] text-[#15201b]">
+    <>
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd()) }}
       />
-      <section className="mx-auto flex w-full max-w-6xl flex-col gap-12 px-5 py-8 sm:px-8 lg:px-10 lg:py-12">
-        <nav className="flex items-center justify-between">
-          <div className="text-lg font-semibold tracking-normal">Företagsnamn.app</div>
-          <div className="rounded-full border border-[#d8d6c8] bg-white px-4 py-2 text-sm font-medium text-[#475149]">
+
+      {/* NAV */}
+      <nav style={{
+        background: "rgba(10,14,26,0.95)",
+        borderBottom: "1px solid var(--border)",
+        padding: "20px 40px",
+        position: "sticky",
+        top: 0,
+        zIndex: 100,
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "space-between",
+        backdropFilter: "blur(8px)",
+      }}>
+        <a href="/" style={{ textDecoration: "none" }}>
+          <span style={{
+            fontFamily: "var(--font-dm-serif-display), 'DM Serif Display', serif",
+            fontSize: "20px",
+            color: "var(--text-primary)",
+          }}>
+            Företagsnamn
+          </span>
+          <span style={{
+            fontFamily: "var(--font-dm-serif-display), 'DM Serif Display', serif",
+            fontSize: "20px",
+            color: "var(--se-yellow)",
+          }}>
+            .app
+          </span>
+        </a>
+        <div style={{ display: "flex", alignItems: "center", gap: "28px" }}>
+          <a href="#how-it-works" style={{ color: "var(--text-secondary)", textDecoration: "none", fontSize: "14px" }}>
+            Hur det fungerar
+          </a>
+          <a href="#domains" style={{ color: "var(--text-secondary)", textDecoration: "none", fontSize: "14px" }}>
+            Domäner
+          </a>
+          <a href="#deep-search" style={{
+            background: "var(--se-blue)",
+            color: "#fff",
+            textDecoration: "none",
+            borderRadius: "8px",
+            padding: "8px 18px",
+            fontSize: "14px",
+            fontWeight: 500,
+          }}>
             Djupsökning 49 kr
-          </div>
-        </nav>
-
-        <HomeClient />
-
-        <TrustSection />
-        <HowItWorksSection />
-        <FaqSection />
-      </section>
-    </main>
-  );
-}
-
-function TrustSection() {
-  const verksamtUrl = "https://verksamt.se/bolagsverket/hjalp-att-valja-foretagsnamn";
-  const items = [
-    {
-      title: "Domäner",
-      text: "Domäner kontrolleras via HostUp och visas med tillgänglighet, pris och registreringskrav när API:t returnerar dem.",
-    },
-    {
-      title: "Sociala medier",
-      text: "Instagram och TikTok kontrolleras indikativt via offentliga profil-URL:er utan inloggning, cookies eller skrapning.",
-    },
-    {
-      title: "Företagsnamn",
-      text: "Företagsnamn är en preliminär förhandskontroll baserad på regler och namnlogik, inte en Bolagsverket-kontroll. Kontrollera även hos Verksamt/Bolagsverket.",
-    },
-    {
-      title: "AI-bedömning",
-      text: "AI-bedömningen summerar risker och alternativ, men är inte juridisk rådgivning.",
-    },
-  ];
-
-  return (
-    <section className="space-y-5">
-      <div>
-        <p className="text-sm font-semibold uppercase tracking-[0.14em] text-[#54665c]">Vad betyder resultatet?</p>
-        <h2 className="mt-2 text-2xl font-semibold sm:text-3xl">Verifierat, indikativt och inofficiellt markerat var för sig.</h2>
-      </div>
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        {items.map((item) => (
-          <article key={item.title} className="rounded-lg border border-[#d8d6c8] bg-white p-5 shadow-sm">
-            <h3 className="font-semibold">{item.title}</h3>
-            <p className="mt-3 text-sm leading-6 text-[#58655e]">{item.text}</p>
-          </article>
-        ))}
-      </div>
-      <div className="rounded-lg border border-[#d8d6c8] bg-white p-5 shadow-sm">
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <h3 className="font-semibold">Kontrollera även hos Verksamt/Bolagsverket</h3>
-            <p className="mt-2 text-sm leading-6 text-[#58655e]">
-              För en officiell bedömning måste namnet prövas av Bolagsverket vid registrering.
-            </p>
-          </div>
-          <a
-            href={verksamtUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex shrink-0 rounded-md bg-[#15201b] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#2c382f]"
-          >
-            Öppna Verksamt/Bolagsverket
           </a>
         </div>
-      </div>
-    </section>
-  );
-}
+      </nav>
 
-function HowItWorksSection() {
-  const steps = [
-    ["Steg 1", "Skriv ett namn"],
-    ["Steg 2", "Få gratis förhandskoll"],
-    ["Steg 3", "Köp djupsökning för 49 kr"],
-    ["Steg 4", "Spara eller skriv ut rapporten"],
-  ];
+      <main>
+        <HomeClient />
 
-  return (
-    <section className="space-y-5">
-      <div>
-        <p className="text-sm font-semibold uppercase tracking-[0.14em] text-[#54665c]">Så fungerar det</p>
-        <h2 className="mt-2 text-2xl font-semibold sm:text-3xl">Från namnidé till utskriftsvänlig rapport.</h2>
-      </div>
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        {steps.map(([label, text]) => (
-          <div key={label} className="rounded-lg border border-[#d8d6c8] bg-[#ecede3] p-5">
-            <p className="text-sm font-semibold text-[#54665c]">{label}</p>
-            <p className="mt-2 font-semibold">{text}</p>
+        {/* HOW IT WORKS */}
+        <section id="how-it-works" style={{ maxWidth: 700, margin: "0 auto", padding: "0 24px 60px" }}>
+          <p style={{ fontSize: 11, textTransform: "uppercase", letterSpacing: "0.12em", color: "var(--se-yellow-muted)", marginBottom: 10 }}>
+            Så fungerar det
+          </p>
+          <h2 style={{ fontFamily: "var(--font-dm-serif-display), 'DM Serif Display', serif", fontSize: 28, fontWeight: 400, color: "var(--text-primary)", marginBottom: 24 }}>
+            Från namnidé till trygg registrering
+          </h2>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 12 }}>
+            {[
+              { n: 1, title: "Skriv namnet", desc: "Ange ditt tilltänkta företagsnamn" },
+              { n: 2, title: "Gratis förhandskoll", desc: "Domäner, sociala, AI-analys direkt" },
+              { n: 3, title: "Djupsökning 49 kr", desc: "Varumärken, PDF och bevakning" },
+              { n: 4, title: "Registrera tryggt", desc: "Ta med rapporten till Verksamt" },
+            ].map(({ n, title, desc }) => (
+              <div key={n} style={{
+                background: "var(--bg-card)",
+                border: "1px solid var(--border)",
+                borderRadius: 12,
+                padding: "18px 14px",
+                textAlign: "center",
+              }}>
+                <div style={{
+                  width: 32, height: 32,
+                  borderRadius: "50%",
+                  background: "rgba(45,125,210,0.15)",
+                  border: "1px solid rgba(45,125,210,0.25)",
+                  color: "#7ab3e8",
+                  fontSize: 13,
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                  margin: "0 auto 12px",
+                }}>
+                  {n}
+                </div>
+                <p style={{ fontSize: 14, fontWeight: 500, color: "var(--text-primary)", marginBottom: 6 }}>{title}</p>
+                <p style={{ fontSize: 12, color: "var(--text-muted)" }}>{desc}</p>
+              </div>
+            ))}
           </div>
-        ))}
-      </div>
-    </section>
+        </section>
+
+        {/* WHAT'S INCLUDED */}
+        <section id="deep-search" style={{ maxWidth: 700, margin: "0 auto", padding: "0 24px 60px" }}>
+          <p style={{ fontSize: 11, textTransform: "uppercase", letterSpacing: "0.12em", color: "var(--se-yellow-muted)", marginBottom: 10 }}>
+            Djupsökning
+          </p>
+          <h2 style={{ fontFamily: "var(--font-dm-serif-display), 'DM Serif Display', serif", fontSize: 28, fontWeight: 400, color: "var(--text-primary)", marginBottom: 24 }}>
+            Vad ingår för 49 kr?
+          </h2>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 28 }}>
+            {FEATURES.map((f) => (
+              <div key={f.title} style={{
+                display: "flex", alignItems: "flex-start", gap: 10,
+                padding: "14px 16px",
+                background: "var(--bg-card)",
+                border: "1px solid var(--border)",
+                borderRadius: 10,
+              }}>
+                <div style={{
+                  width: 28, height: 28, flexShrink: 0,
+                  background: "rgba(245,200,66,0.1)",
+                  borderRadius: 7,
+                  color: "var(--se-yellow)",
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                  fontSize: 15,
+                }}>
+                  {f.icon}
+                </div>
+                <div>
+                  <strong style={{ display: "block", color: "var(--text-primary)", fontSize: 13, marginBottom: 3 }}>{f.title}</strong>
+                  <span style={{ color: "var(--text-secondary)", fontSize: 13 }}>{f.desc}</span>
+                </div>
+              </div>
+            ))}
+          </div>
+          <div style={{ textAlign: "center" }}>
+            <DeepSearchCta />
+            <p style={{ fontSize: 12, color: "var(--text-muted)", marginTop: 10 }}>
+              Betalning via Stripe · Ingen prenumeration · Engångsbelopp
+            </p>
+          </div>
+        </section>
+
+        {/* FAQ */}
+        <section style={{ maxWidth: 700, margin: "0 auto", padding: "0 24px 60px" }}>
+          <p style={{ fontSize: 11, textTransform: "uppercase", letterSpacing: "0.12em", color: "var(--se-yellow-muted)", marginBottom: 10 }}>
+            Vanliga frågor
+          </p>
+          <h2 style={{ fontFamily: "var(--font-dm-serif-display), 'DM Serif Display', serif", fontSize: 28, fontWeight: 400, color: "var(--text-primary)", marginBottom: 4 }}>
+            FAQ
+          </h2>
+          <div>
+            {FAQ_ITEMS.map((item, i) => (
+              <div key={item.q} style={{
+                borderTop: i === 0 ? "none" : "1px solid var(--border)",
+                padding: "18px 0",
+              }}>
+                <p style={{ fontSize: 15, fontWeight: 500, color: "var(--text-primary)", marginBottom: 8 }}>{item.q}</p>
+                <p style={{ fontSize: 14, color: "var(--text-secondary)", lineHeight: 1.6 }}>{item.a}</p>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        {/* FOOTER */}
+        <footer style={{
+          borderTop: "1px solid var(--border)",
+          padding: "28px 40px",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          flexWrap: "wrap",
+          gap: 16,
+        }}>
+          <a href="/" style={{ textDecoration: "none" }}>
+            <span style={{ fontFamily: "var(--font-dm-serif-display), 'DM Serif Display', serif", fontSize: 18, color: "var(--text-primary)" }}>Företagsnamn</span>
+            <span style={{ fontFamily: "var(--font-dm-serif-display), 'DM Serif Display', serif", fontSize: 18, color: "var(--se-yellow)" }}>.app</span>
+          </a>
+          <div style={{ display: "flex", gap: 20, flexWrap: "wrap" }}>
+            {["Integritetspolicy", "Villkor", "domain.mad.onl", "Kontakt"].map((link) => (
+              <a key={link} href="#" style={{ fontSize: 13, color: "var(--text-muted)", textDecoration: "none" }}>{link}</a>
+            ))}
+          </div>
+          <p style={{ fontSize: 13, color: "var(--text-muted)" }}>© 2026 · Ej juridisk rådgivning</p>
+        </footer>
+      </main>
+    </>
   );
 }
 
-function FaqSection() {
+const FEATURES = [
+  { icon: "🛡", title: "Varumärkeskoll", desc: "Svenska PRV + EU-register via TMview" },
+  { icon: "🌐", title: "Fullständig domänkoll", desc: "10+ ändelser med priser och köplänkar" },
+  { icon: "🧠", title: "10 namnalternativ", desc: "AI föreslår varianter som är lediga" },
+  { icon: "📄", title: "PDF-rapport", desc: "Redo att skriva ut och spara" },
+  { icon: "🔔", title: "30 dagars bevakning", desc: "Notis om liknande namn dyker upp" },
+  { icon: "⚠️", title: "Fonetisk riskanalys", desc: "Känner av 'låter som'-konflikter" },
+];
+
+function DeepSearchCta() {
   return (
-    <section className="space-y-5">
-      <div>
-        <p className="text-sm font-semibold uppercase tracking-[0.14em] text-[#54665c]">FAQ</p>
-        <h2 className="mt-2 text-2xl font-semibold sm:text-3xl">Vanliga frågor</h2>
-      </div>
-      <div className="grid gap-3">
-        {FAQ_ITEMS.map((item) => (
-          <article key={item.question} className="rounded-lg border border-[#d8d6c8] bg-white p-5 shadow-sm">
-            <h3 className="font-semibold">{item.question}</h3>
-            <p className="mt-2 text-sm leading-6 text-[#58655e]">{item.answer}</p>
-          </article>
-        ))}
-      </div>
-    </section>
+    <a
+      href="/api/checkout/deep-search"
+      style={{
+        display: "inline-block",
+        background: "var(--se-yellow)",
+        color: "#0a0e1a",
+        fontWeight: 700,
+        fontSize: 16,
+        padding: "14px 40px",
+        borderRadius: 9,
+        textDecoration: "none",
+        cursor: "pointer",
+      }}
+    >
+      Starta djupsökning — 49 kr
+    </a>
   );
 }
