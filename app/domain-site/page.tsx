@@ -3,6 +3,8 @@
 import { useState } from 'react'
 import { DomainResultRow } from './DomainResultRow'
 import { MY_PRICES, formatPrice } from './pricing'
+import { useAuth } from '@/lib/AuthContext'
+import { AuthModal } from '@/components/AuthModal'
 
 // TLDs to always check when user searches
 const DEFAULT_TLDS = ['se', 'com', 'nu', 'io', 'app', 'ai', 'co', 'org', 'net', 'eu', 'xyz']
@@ -15,6 +17,8 @@ interface DomainResult {
 }
 
 export default function DomainSitePage() {
+  const { user, logOut } = useAuth()
+  const [authOpen, setAuthOpen] = useState(false)
   const [query, setQuery] = useState('')
   const [results, setResults] = useState<DomainResult[]>([])
   const [hasSearched, setHasSearched] = useState(false)
@@ -100,10 +104,24 @@ export default function DomainSitePage() {
         <div style={{ display: 'flex', gap: '24px', alignItems: 'center' }}>
           <a href="#priser" style={{ fontSize: '14px', color: '#4a6b58', textDecoration: 'none' }}>Priser</a>
           <a href="https://foretagsnamn.mad.onl" style={{ fontSize: '14px', color: '#4a6b58', textDecoration: 'none' }}>Analysera företagsnamn</a>
-          <button style={{
-            fontSize: '14px', padding: '7px 16px', border: '1px solid #c8ddd2',
-            borderRadius: '8px', background: '#fff', cursor: 'pointer', fontFamily: 'Inter, sans-serif'
-          }}>Mina domäner</button>
+          {user ? (
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+              <span style={{ fontSize: '13px', color: '#4a6b58' }}>{user.email}</span>
+              <button
+                onClick={() => logOut()}
+                style={{ fontSize: '13px', padding: '6px 14px', border: '1px solid #c8ddd2', borderRadius: '8px', background: '#fff', cursor: 'pointer' }}
+              >
+                Logga ut
+              </button>
+            </div>
+          ) : (
+            <button
+              onClick={() => setAuthOpen(true)}
+              style={{ fontSize: '14px', padding: '7px 16px', border: '1px solid #c8ddd2', borderRadius: '8px', background: '#fff', cursor: 'pointer' }}
+            >
+              Logga in / Mina domäner
+            </button>
+          )}
         </div>
       </nav>
 
@@ -278,6 +296,7 @@ export default function DomainSitePage() {
         <div>© 2026 · mad.onl</div>
       </footer>
 
+      <AuthModal isOpen={authOpen} onClose={() => setAuthOpen(false)} />
     </div>
   )
 }
