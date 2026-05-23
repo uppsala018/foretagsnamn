@@ -6,7 +6,7 @@ export function middleware(request: NextRequest) {
   const url = request.nextUrl.clone()
 
   if (hostname.startsWith('domain.')) {
-    url.pathname = '/domain' + (url.pathname === '/' ? '' : url.pathname)
+    url.pathname = '/domain-site' + (url.pathname === '/' ? '' : url.pathname)
     return NextResponse.rewrite(url)
   }
 
