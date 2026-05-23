@@ -3,6 +3,7 @@
 import { FormEvent, useMemo, useState } from "react";
 import type { NamecheckReport, NamecheckResult, BrandRisk } from "@/lib/namecheck/types";
 import { MAX_QUERY_LENGTH } from "@/lib/namecheck/validation";
+import { getPrice, formatPrice as fmtSEK } from "@/lib/pricing";
 
 const DOMAIN_SUFFIXES = [
   ".se", ".nu", ".com", ".io", ".net", ".org", ".xyz", ".eu", ".online", ".store", ".blog",
@@ -313,9 +314,16 @@ function DomainsCard({ domainResults, showAll, onToggle, domainError }: {
           }}>
             <span style={{ fontWeight: 500, fontSize: 14, color: "var(--text-primary)", minWidth: 120 }}>{result.name}</span>
             <span style={{ color: ds.color, fontSize: 13, flex: 1, paddingLeft: 12 }}>{ds.dot} {ds.label}</span>
-            <span style={{ fontSize: 13, color: "var(--text-secondary)", paddingRight: 12 }}>
-              {result.available ? formatPrice(result) : ""}
-            </span>
+            {result.available ? (() => {
+              const tld = result.name.split(".").pop() ?? "";
+              const p = getPrice(tld);
+              return (
+                <div style={{ textAlign: "right", paddingRight: 12 }}>
+                  <div style={{ fontSize: 13, fontWeight: 600, color: "var(--text-primary)" }}>{fmtSEK(p.year1)} första året</div>
+                  <div style={{ fontSize: 11, color: "var(--text-muted)" }}>sedan {fmtSEK(p.renewal)}/år</div>
+                </div>
+              );
+            })() : <span style={{ paddingRight: 12 }} />}
             {result.available ? (
               <a
                 href={`https://domain.mad.onl?domain=${encodeURIComponent(result.name)}`}
