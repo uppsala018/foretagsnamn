@@ -1,1 +1,42 @@
-/* domain.mad.onl — global styles */
+/* domain.mad.onl — design tokens & base */
+
+.dm-root {
+  --dm-bg: #f8faf9;
+  --dm-bg-white: #ffffff;
+  --dm-green: #0ea05a;
+  --dm-green-dark: #0a7a44;
+  --dm-green-light: #eaf7f1;
+  --dm-text: #0d1f17;
+  --dm-text-secondary: #4a6b58;
+  --dm-text-muted: #9ab8a8;
+  --dm-border: #e0ede6;
+  --dm-border-input: #c0ddd0;
+
+  font-family: var(--dm-font-inter), 'Inter', sans-serif;
+  color: var(--dm-text);
+  background: var(--dm-bg);
+  min-height: 100vh;
+}
+
+.dm-root * {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+.dm-root input:focus {
+  outline: none;
+  border-color: var(--dm-green) !important;
+  background: var(--dm-bg-white) !important;
+}
+
+.dm-root a {
+  text-decoration: none;
+  color: inherit;
+}
+
+.dm-root button {
+  cursor: pointer;
+  font-family: inherit;
+  border: none;
+}
