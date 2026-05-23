@@ -1,5 +1,3 @@
-"use server";
-
 import { HomeClient } from "./page-client";
 
 function faqJsonLd() {
