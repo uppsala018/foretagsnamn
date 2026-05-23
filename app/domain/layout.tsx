@@ -20,7 +20,10 @@ const syne = Syne({
 export const metadata: Metadata = {
   title: "Domain by mad.onl — Registrera din domän",
   description:
-    "Sök och registrera domäner direkt — .se, .com, .nu och 100+ andra ändelser till konkurrenskraftiga priser.",
+    "Sök och registrera .se, .com, .nu och 100+ domänändelser. Snabbt, enkelt och med transparenta priser.",
+  alternates: {
+    canonical: "https://domain.mad.onl",
+  },
   openGraph: {
     siteName: "Domain by mad.onl",
   },
