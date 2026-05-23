@@ -123,12 +123,10 @@ function Nav() {
       position: "sticky", top: 0, zIndex: 50,
       display: "flex", alignItems: "center", justifyContent: "space-between",
     }}>
-      <a href="/" style={{ display: "flex", flexDirection: "column", gap: 1 }}>
-        <span style={{ fontFamily: "var(--dm-font-syne), Syne, sans-serif", fontSize: 20, fontWeight: 700, lineHeight: 1 }}>
-          <span style={{ color: "var(--dm-text)" }}>domain</span>
-          <span style={{ color: "var(--dm-green)" }}>.onl</span>
-        </span>
-        <span style={{ fontSize: 11, color: "var(--dm-text-muted)", lineHeight: 1 }}>by mad.onl</span>
+      <a href="/" style={{ fontFamily: "var(--dm-font-syne), Syne, sans-serif", fontSize: 20, fontWeight: 700, lineHeight: 1 }}>
+        <span style={{ color: "#0d1f17" }}>Domain</span>
+        <span style={{ color: "#9ab8a8", fontSize: 14, fontWeight: 400 }}> by </span>
+        <span style={{ color: "#0ea05a" }}>mad.onl</span>
       </a>
       <div style={{ display: "flex", alignItems: "center", gap: 24 }}>
         <a href="#tld-grid" style={{ fontSize: 14, color: "var(--dm-text-secondary)" }}>Populära TLD:er</a>
@@ -483,7 +481,7 @@ function FeaturesSection() {
           fontFamily: "var(--dm-font-syne), Syne, sans-serif",
           fontSize: 24, fontWeight: 700, color: "var(--dm-text)", marginBottom: 6,
         }}>
-          Därför domain.onl
+          Därför Domain by mad.onl
         </h2>
         <p style={{ fontSize: 14, color: "var(--dm-text-secondary)" }}>Enkelt, snabbt och utan krångel</p>
       </div>
@@ -522,18 +520,16 @@ function Footer() {
       display: "flex", alignItems: "center", justifyContent: "space-between",
       flexWrap: "wrap", gap: 16,
     }}>
-      <a href="/" style={{ display: "flex", flexDirection: "column", gap: 1 }}>
-        <span style={{ fontFamily: "var(--dm-font-syne), Syne, sans-serif", fontSize: 18, fontWeight: 700, lineHeight: 1 }}>
-          <span style={{ color: "var(--dm-text)" }}>domain</span>
-          <span style={{ color: "var(--dm-green)" }}>.onl</span>
-        </span>
-        <span style={{ fontSize: 11, color: "var(--dm-text-muted)" }}>by mad.onl</span>
+      <a href="/" style={{ fontFamily: "var(--dm-font-syne), Syne, sans-serif", fontSize: 18, fontWeight: 700, lineHeight: 1 }}>
+        <span style={{ color: "#0d1f17" }}>Domain</span>
+        <span style={{ color: "#9ab8a8", fontSize: 13, fontWeight: 400 }}> by </span>
+        <span style={{ color: "#0ea05a" }}>mad.onl</span>
       </a>
       <div style={{ display: "flex", gap: 20, flexWrap: "wrap" }}>
         {["Integritetspolicy", "Villkor"].map((l) => (
           <a key={l} href="#" style={{ fontSize: 13, color: "var(--dm-text-muted)" }}>{l}</a>
         ))}
-        <a href="https://foretagsnamn.mad.onl" style={{ fontSize: 13, color: "var(--dm-text-muted)" }}>Företagsnamn.app</a>
+        <a href="https://foretagsnamn.mad.onl" style={{ fontSize: 13, color: "var(--dm-text-muted)" }}>Företagsnamn by mad.onl</a>
         <a href="#" style={{ fontSize: 13, color: "var(--dm-text-muted)" }}>Kontakt</a>
       </div>
       <p style={{ fontSize: 13, color: "var(--dm-text-muted)" }}>© 2026 · mad.onl</p>

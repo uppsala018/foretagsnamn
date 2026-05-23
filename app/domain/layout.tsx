@@ -18,9 +18,12 @@ const syne = Syne({
 });
 
 export const metadata: Metadata = {
-  title: "domain.onl — Registrera domäner enkelt",
+  title: "Domain by mad.onl — Registrera din domän",
   description:
     "Sök och registrera domäner direkt — .se, .com, .nu och 100+ andra ändelser till konkurrenskraftiga priser.",
+  openGraph: {
+    siteName: "Domain by mad.onl",
+  },
 };
 
 export default function DomainLayout({ children }: { children: ReactNode }) {

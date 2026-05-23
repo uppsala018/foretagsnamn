@@ -20,24 +20,24 @@ const appUrl = process.env.NEXT_PUBLIC_APP_URL || "https://foretagsnamn.mad.onl"
 
 export const metadata: Metadata = {
   metadataBase: new URL(appUrl),
-  title: "Företagsnamn.app | Rätt namn från start",
+  title: "Företagsnamn by mad.onl | Rätt namn från start",
   description:
     "Förhandskolla ditt företagsnamn mot domäner, sociala handles och varumärkesregister. AI-driven namnkoll för svenska bolag.",
   alternates: {
     canonical: appUrl,
   },
   openGraph: {
-    title: "Företagsnamn.app | Rätt namn från start",
+    title: "Företagsnamn by mad.onl | Rätt namn från start",
     description:
       "Förhandskolla ditt företagsnamn mot domäner, sociala handles och varumärkesregister. AI-driven namnkoll för svenska bolag.",
     url: appUrl,
-    siteName: "Företagsnamn.app",
+    siteName: "Företagsnamn by mad.onl",
     locale: "sv_SE",
     type: "website",
   },
   twitter: {
     card: "summary",
-    title: "Företagsnamn.app | Rätt namn från start",
+    title: "Företagsnamn by mad.onl | Rätt namn från start",
     description:
       "Förhandskolla ditt företagsnamn mot domäner, sociala handles och varumärkesregister. AI-driven namnkoll för svenska bolag.",
   },

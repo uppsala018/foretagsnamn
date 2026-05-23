@@ -357,13 +357,13 @@ function DomainsCard({ domainResults, showAll, onToggle, domainError }: {
             rel="noopener noreferrer"
             style={{ fontSize: 12, color: "#7ab3e8", textDecoration: "none" }}
           >
-            Fler domänändelser på domain.mad.onl →
+            Fler domänändelser på Domain by mad.onl →
           </a>
         </div>
       ) : (
         <div style={{ marginTop: 10, textAlign: "right" }}>
           <a href="https://domain.mad.onl" target="_blank" rel="noopener noreferrer" style={{ fontSize: 12, color: "#7ab3e8", textDecoration: "none" }}>
-            Fler domänändelser på domain.mad.onl →
+            Fler domänändelser på Domain by mad.onl →
           </a>
         </div>
       )}

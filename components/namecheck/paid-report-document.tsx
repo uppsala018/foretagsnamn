@@ -146,7 +146,7 @@ export function PaidReportDocument({
   return (
     <article className="print-document hidden bg-white text-[#15201b] print:block">
       <header className="border-b border-[#d8d6c8] pb-6">
-        <p className="text-sm font-semibold uppercase tracking-[0.14em] text-[#54665c]">Företagsnamn.app</p>
+        <p className="text-sm font-semibold uppercase tracking-[0.14em] text-[#54665c]">Företagsnamn by mad.onl</p>
         <h1 className="mt-3 text-4xl font-semibold">Djupsökningsrapport</h1>
         <dl className="mt-5 grid gap-3 text-sm sm:grid-cols-3">
           <div>

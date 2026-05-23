@@ -27,7 +27,7 @@ const FAQ_ITEMS = [
   },
   {
     q: "Var registreras domänerna?",
-    a: "Via vår domänplattform domain.mad.onl — du hanterar och äger domänen direkt hos oss, utan mellanhänder.",
+    a: "Via vår domänplattform Domain by mad.onl — du hanterar och äger domänen direkt hos oss, utan mellanhänder.",
   },
 ];
 
@@ -61,11 +61,17 @@ export default function Home() {
             Företagsnamn
           </span>
           <span style={{
+            fontSize: "14px",
+            color: "var(--text-secondary)",
+          }}>
+            {" by "}
+          </span>
+          <span style={{
             fontFamily: "var(--font-dm-serif-display), 'DM Serif Display', serif",
             fontSize: "20px",
             color: "var(--se-yellow)",
           }}>
-            .app
+            mad.onl
           </span>
         </a>
         <div style={{ display: "flex", alignItems: "center", gap: "28px" }}>
@@ -208,11 +214,17 @@ export default function Home() {
         }}>
           <a href="/" style={{ textDecoration: "none" }}>
             <span style={{ fontFamily: "var(--font-dm-serif-display), 'DM Serif Display', serif", fontSize: 18, color: "var(--text-primary)" }}>Företagsnamn</span>
-            <span style={{ fontFamily: "var(--font-dm-serif-display), 'DM Serif Display', serif", fontSize: 18, color: "var(--se-yellow)" }}>.app</span>
+            <span style={{ fontSize: 13, color: "var(--text-secondary)" }}>{" by "}</span>
+            <span style={{ fontFamily: "var(--font-dm-serif-display), 'DM Serif Display', serif", fontSize: 18, color: "var(--se-yellow)" }}>mad.onl</span>
           </a>
           <div style={{ display: "flex", gap: 20, flexWrap: "wrap" }}>
-            {["Integritetspolicy", "Villkor", "domain.mad.onl", "Kontakt"].map((link) => (
-              <a key={link} href="#" style={{ fontSize: 13, color: "var(--text-muted)", textDecoration: "none" }}>{link}</a>
+            {[
+              { label: "Integritetspolicy", href: "#" },
+              { label: "Villkor", href: "#" },
+              { label: "Domain by mad.onl", href: "https://domain.mad.onl" },
+              { label: "Kontakt", href: "#" },
+            ].map(({ label, href }) => (
+              <a key={label} href={href} style={{ fontSize: 13, color: "var(--text-muted)", textDecoration: "none" }}>{label}</a>
             ))}
           </div>
           <p style={{ fontSize: 13, color: "var(--text-muted)" }}>© 2026 · Ej juridisk rådgivning</p>

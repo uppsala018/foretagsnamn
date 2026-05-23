@@ -86,7 +86,7 @@ export default function SuccessPage() {
     <main className="min-h-screen bg-[#f7f7f2] px-5 py-10 text-[#15201b] print:bg-white print:px-0 print:py-0">
       <section className="mx-auto flex w-full max-w-6xl flex-col gap-8 print:block print:max-w-none">
         <nav className="no-print flex items-center justify-between">
-          <a href="/" className="text-lg font-semibold tracking-normal">Företagsnamn.app</a>
+          <a href="/" className="text-lg font-semibold tracking-normal">Företagsnamn by mad.onl</a>
           <span className="rounded-full border border-[#d8d6c8] bg-white px-4 py-2 text-sm font-medium text-[#475149]">
             Djupsökning 49 kr
           </span>
