@@ -3,6 +3,7 @@ import { createNamecheckReport } from "@/lib/namecheck/generate-report";
 import { validateNamecheckQuery } from "@/lib/namecheck/validation";
 import { isReportStoreConfigured, getPaidReport, savePaidReport } from "@/lib/reports/report-store";
 import { verifyDeepSearchCheckoutSession } from "@/lib/stripe";
+import { sendReportEmail } from "@/lib/email";
 
 function readSessionId(body: unknown): string {
   if (typeof body !== "object" || body === null || !("sessionId" in body)) {
@@ -68,6 +69,9 @@ export async function POST(request: Request) {
     }
 
     const report = await createNamecheckReport(validation.query);
+    const emailResult = verification.email
+      ? await sendReportEmail(verification.email, `Din djupsökningsrapport: ${validation.query}`, report)
+      : { sent: false };
 
     const savedReport = await savePaidReport({
       sessionId: verification.sessionId,
@@ -75,6 +79,8 @@ export async function POST(request: Request) {
       report,
       stripePaymentStatus: verification.stripePaymentStatus ?? "unknown",
       product: verification.product ?? "deep_search",
+      customerEmail: verification.email,
+      emailSent: emailResult.sent,
     });
 
     return NextResponse.json({

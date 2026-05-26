@@ -12,6 +12,8 @@ export type PaidReportRecord = {
   report: NamecheckReport;
   stripePaymentStatus: string;
   product: string;
+  customerEmail?: string | null;
+  emailSent?: boolean;
 };
 
 export function isReportStoreConfigured(): boolean {

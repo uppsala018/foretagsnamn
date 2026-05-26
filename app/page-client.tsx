@@ -1,24 +1,17 @@
 "use client";
 
-import { FormEvent, useMemo, useState } from "react";
+import { FormEvent, useEffect, useMemo, useState } from "react";
 import type { NamecheckReport, NamecheckResult, BrandRisk } from "@/lib/namecheck/types";
 import { MAX_QUERY_LENGTH } from "@/lib/namecheck/validation";
 import { getPrice, formatPrice as fmtSEK } from "@/lib/pricing";
-import { db } from "@/lib/firebase";
-import { collection, addDoc, serverTimestamp } from "firebase/firestore";
 
 async function saveEmailAndSearch(email: string, searchQuery: string) {
-  if (!email || !email.includes("@")) return;
-  try {
-    await addDoc(collection(db, "leads"), {
-      email,
-      searchQuery,
-      source: "foretagsnamn",
-      createdAt: serverTimestamp(),
-    });
-  } catch (e) {
-    console.error("Firestore save failed:", e);
-  }
+  const response = await fetch("/api/reports/free", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ email, query: searchQuery }),
+  });
+  return response.json() as Promise<{ ok?: boolean; message?: string; error?: string }>;
 }
 
 const DOMAIN_SUFFIXES = [
@@ -397,6 +390,48 @@ function DomainsCard({ domainResults, showAll, onToggle, domainError }: {
 
 // ─── AI card ──────────────────────────────────────────────────────────────────
 
+function TrademarkCard({ report }: { report: NamecheckReport }) {
+  const result = report.results.find((r) => r.category === "trademark_check");
+  const trademarkCheck = result?.metadata?.trademarkCheck;
+
+  return (
+    <Card>
+      <CardLabel>Varumärkeskoll</CardLabel>
+      {!trademarkCheck ? (
+        <p style={{ fontSize: 13, color: "var(--text-muted)", lineHeight: 1.5 }}>
+          Varumärkeskoll kunde inte läsas in.
+        </p>
+      ) : (
+        <div style={{ display: "grid", gap: 12 }}>
+          {trademarkCheck.sources.map((source) => (
+            <div key={source.source} style={{ borderBottom: "1px solid var(--border)", paddingBottom: 10 }}>
+              <div style={{ display: "flex", justifyContent: "space-between", gap: 10 }}>
+                <strong style={{ fontSize: 13, color: "var(--text-primary)" }}>{source.label}</strong>
+                <span style={{
+                  fontSize: 12,
+                  color: source.status === "checked" ? "var(--green)" : source.status === "error" ? "var(--red)" : "var(--amber)",
+                }}>
+                  {source.status === "checked" ? "Kontrollerad" : source.status === "error" ? "Fel" : "Ej konfigurerad"}
+                </span>
+              </div>
+              <p style={{ fontSize: 12, color: "var(--text-muted)", marginTop: 4, lineHeight: 1.5 }}>{source.message}</p>
+              {source.matches.length ? (
+                <ul style={{ listStyle: "none", padding: 0, margin: "8px 0 0" }}>
+                  {source.matches.slice(0, 3).map((match) => (
+                    <li key={`${source.source}-${match.name}-${match.applicationNumber ?? ""}`} style={{ fontSize: 12, color: "var(--text-secondary)", lineHeight: 1.6 }}>
+                      {match.name}{match.owner ? ` · ${match.owner}` : ""}{match.status ? ` · ${match.status}` : ""}
+                    </li>
+                  ))}
+                </ul>
+              ) : null}
+            </div>
+          ))}
+        </div>
+      )}
+    </Card>
+  );
+}
+
 function AiCard({ report }: { report: NamecheckReport }) {
   const result = report.results.find((r) => r.category === "ai_assessment");
   if (!result) return null;
@@ -461,19 +496,32 @@ function AiCard({ report }: { report: NamecheckReport }) {
 
 function UnlockBar({ query }: { query: string }) {
   const [loading, setLoading] = useState(false);
+  const [email, setEmail] = useState("");
+  const [error, setError] = useState("");
 
   async function handleClick() {
     if (!query.trim() || loading) return;
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
+      setError("Ange din e-post innan du går vidare till betalning.");
+      return;
+    }
     setLoading(true);
+    setError("");
     try {
       const res = await fetch("/api/checkout/deep-search", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ query: query.trim() }),
+        body: JSON.stringify({ query: query.trim(), email: email.trim() }),
       });
       const data = await res.json() as { url?: string; error?: string };
-      if (data.url) window.location.href = data.url;
+      if (data.url) {
+        window.location.href = data.url;
+        return;
+      }
+      setError(data.error ?? "Kunde inte starta betalningen.");
+      setLoading(false);
     } catch {
+      setError("Kunde inte starta betalningen just nu.");
       setLoading(false);
     }
   }
@@ -489,6 +537,20 @@ function UnlockBar({ query }: { query: string }) {
         <p style={{ fontSize: 16, fontWeight: 600, color: "var(--text-primary)", marginBottom: 4 }}>Fullständig djupsökning</p>
         <p style={{ fontSize: 13, color: "var(--text-secondary)" }}>Varumärkesregister · PDF-rapport · 30 dagars bevakning · 10 namnalternativ</p>
       </div>
+      <div style={{ display: "grid", gap: 8, minWidth: 260 }}>
+      <input
+        type="email"
+        value={email}
+        onChange={(event) => setEmail(event.target.value)}
+        placeholder="din@epost.se"
+        style={{
+          padding: "11px 12px",
+          borderRadius: 8,
+          border: "1px solid rgba(45,125,210,0.3)",
+          background: "rgba(255,255,255,0.05)",
+          color: "var(--text-primary)",
+        }}
+      />
       <button
         type="button"
         onClick={handleClick}
@@ -502,6 +564,8 @@ function UnlockBar({ query }: { query: string }) {
       >
         {loading ? "Laddar..." : "Köp för 49 kr"}
       </button>
+      {error ? <p style={{ fontSize: 12, color: "var(--red)" }}>{error}</p> : null}
+      </div>
     </div>
   );
 }
@@ -519,6 +583,22 @@ function ResultsSection({ report, domainResults, showAll, onToggle, domainError,
   const risk = getOverallRisk(report);
   const [leadEmail, setLeadEmail] = useState("");
   const [emailSaved, setEmailSaved] = useState(false);
+  const [emailMessage, setEmailMessage] = useState("");
+  const [emailLoading, setEmailLoading] = useState(false);
+
+  async function submitFreeReportEmail() {
+    if (emailLoading) return;
+    setEmailLoading(true);
+    setEmailMessage("");
+    const payload: { ok?: boolean; message?: string; error?: string } = await saveEmailAndSearch(leadEmail, query).catch(() => ({ error: "Kunde inte registrera rapporten just nu." }));
+    if (payload.ok) {
+      setEmailSaved(true);
+      setEmailMessage(payload.message ?? "Rapporten är registrerad.");
+    } else {
+      setEmailMessage(payload.error ?? "Kunde inte registrera rapporten just nu.");
+    }
+    setEmailLoading(false);
+  }
 
   return (
     <section aria-live="polite" style={{ maxWidth: 700, margin: "0 auto", padding: "0 24px 60px" }}>
@@ -552,6 +632,10 @@ function ResultsSection({ report, domainResults, showAll, onToggle, domainError,
         />
       </div>
 
+      <div style={{ marginBottom: 14 }}>
+        <TrademarkCard report={report} />
+      </div>
+
       {/* AI */}
       <div style={{ marginBottom: 14 }}>
         <AiCard report={report} />
@@ -575,8 +659,7 @@ function ResultsSection({ report, domainResults, showAll, onToggle, domainError,
                 onChange={e => setLeadEmail(e.target.value)}
                 onKeyDown={async e => {
                   if (e.key === "Enter") {
-                    await saveEmailAndSearch(leadEmail, query);
-                    setEmailSaved(true);
+                    await submitFreeReportEmail();
                   }
                 }}
                 style={{
@@ -587,19 +670,20 @@ function ResultsSection({ report, domainResults, showAll, onToggle, domainError,
                 }}
               />
               <button
-                onClick={async () => {
-                  await saveEmailAndSearch(leadEmail, query);
-                  setEmailSaved(true);
-                }}
+                onClick={submitFreeReportEmail}
+                disabled={emailLoading}
                 style={{
                   background: "#f5c842", color: "#0a0e1a", border: "none",
                   padding: "9px 18px", borderRadius: "8px",
-                  fontSize: "13px", fontWeight: 700, cursor: "pointer",
+                  fontSize: "13px", fontWeight: 700, cursor: emailLoading ? "not-allowed" : "pointer",
                 }}
               >
                 Spara →
               </button>
             </div>
+            {emailMessage ? (
+              <p style={{ fontSize: "12px", color: "var(--amber)", marginTop: 8 }}>{emailMessage}</p>
+            ) : null}
           </div>
         ) : (
           <p style={{ fontSize: "13px", color: "#4ade80", marginTop: "12px" }}>
@@ -635,6 +719,14 @@ export function HomeClient() {
     [report, domainResults],
   );
   const canSubmit = domainBase.length > 0 && !isLoading;
+
+  useEffect(() => {
+    void fetch("/api/analytics", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name: "page_view", path: window.location.pathname }),
+    }).catch(() => undefined);
+  }, []);
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();

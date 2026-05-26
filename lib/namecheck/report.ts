@@ -8,6 +8,7 @@ import {
 import { createSuggestions, normalizeQuery } from "./normalize";
 import { checkSocialProfiles } from "./social-provider";
 import type { AiBrandAnalysis, NamecheckReport, NamecheckResult, NamecheckTarget } from "./types";
+import { createTrademarkNamecheckResult } from "@/lib/trademark";
 
 const DOMAIN_CATEGORIES = new Set<NamecheckTarget["category"]>([
   "domain_se",
@@ -176,6 +177,11 @@ export async function createNamecheckReport(query: string): Promise<NamecheckRep
       value: suggestions.domains.com,
     },
     {
+      category: "trademark_check",
+      label: "Varumärkeskoll",
+      value: normalizedQuery,
+    },
+    {
       category: "instagram",
       label: "Instagram",
       value: suggestions.handles.instagram,
@@ -201,19 +207,22 @@ export async function createNamecheckReport(query: string): Promise<NamecheckRep
       &&
       !DOMAIN_CATEGORIES.has(target.category)
       && !SOCIAL_CATEGORIES.has(target.category)
+      && target.category !== "trademark_check"
       && target.category !== "ai_assessment",
   );
 
   const placeholderResults = await mockNamecheckProvider.check(placeholderTargets, normalizedQuery);
   const companyResult = companyTarget ? checkCompanyName(companyTarget) : null;
-  const [domainResults, socialResults] = await Promise.all([
+  const [domainResults, socialResults, trademarkResult] = await Promise.all([
     createDomainResults(domainTargets, normalizedQuery),
     createSocialResults(socialTargets, normalizedQuery),
+    createTrademarkNamecheckResult(normalizedQuery),
   ]);
   const preAiResults = [
     ...placeholderResults,
     ...(companyResult ? [companyResult] : []),
     ...domainResults,
+    trademarkResult,
     ...socialResults,
   ];
   const aiResult = await createAiAssessmentResult(normalizedQuery, preAiResults);

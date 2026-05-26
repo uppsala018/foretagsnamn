@@ -10,13 +10,14 @@ export type StripeCheckoutConfig = {
 export type DeepSearchSessionVerification = {
   paid: boolean;
   query: string | null;
+  email: string | null;
   sessionId: string;
   stripePaymentStatus: Stripe.Checkout.Session["payment_status"] | null;
   product: string | null;
 };
 
 export function getStripeCheckoutConfig(): StripeCheckoutConfig | null {
-  const priceId = process.env.STRIPE_PRICE_ID_DEEP_SEARCH;
+  const priceId = process.env.STRIPE_PRICE_DEEP_SEARCH || process.env.STRIPE_PRICE_ID_DEEP_SEARCH;
   const appUrl = process.env.NEXT_PUBLIC_APP_URL;
 
   if (!process.env.STRIPE_SECRET_KEY || !priceId || !appUrl) {
@@ -50,10 +51,14 @@ export async function verifyDeepSearchCheckoutSession(
   const query = paid && typeof session.metadata?.query === "string"
     ? session.metadata.query
     : null;
+  const email = typeof session.metadata?.email === "string"
+    ? session.metadata.email
+    : session.customer_details?.email ?? session.customer_email ?? null;
 
   return {
     paid,
     query,
+    email,
     sessionId: safeSessionId,
     stripePaymentStatus: session.payment_status,
     product,

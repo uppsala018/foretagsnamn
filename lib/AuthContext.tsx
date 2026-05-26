@@ -30,6 +30,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
+    if (!auth) {
+      setLoading(false)
+      return
+    }
+
     const unsubscribe = onAuthStateChanged(auth, (u) => {
       setUser(u)
       setLoading(false)
@@ -38,23 +43,28 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [])
 
   async function signIn(email: string, password: string) {
+    if (!auth) throw new Error('Firebase auth is not configured')
     await signInWithEmailAndPassword(auth, email, password)
   }
 
   async function signUp(email: string, password: string) {
+    if (!auth) throw new Error('Firebase auth is not configured')
     await createUserWithEmailAndPassword(auth, email, password)
   }
 
   async function signInWithGoogle() {
+    if (!auth) throw new Error('Firebase auth is not configured')
     const provider = new GoogleAuthProvider()
     await signInWithPopup(auth, provider)
   }
 
   async function resetPassword(email: string) {
+    if (!auth) throw new Error('Firebase auth is not configured')
     await sendPasswordResetEmail(auth, email)
   }
 
   async function logOut() {
+    if (!auth) return
     await signOut(auth)
   }
 

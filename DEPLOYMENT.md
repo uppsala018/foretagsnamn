@@ -70,6 +70,24 @@ Use this checklist after every production deployment:
 
 Check `STRIPE_SECRET_KEY`, `STRIPE_PRICE_ID_DEEP_SEARCH`, and `NEXT_PUBLIC_APP_URL`. The homepage disables checkout when Stripe is not configured.
 
+Webhook URL for completed paid reports:
+
+`https://foretagsnamn.mad.onl/api/stripe-webhook`
+
+Required webhook event:
+
+`checkout.session.completed`
+
+The webhook uses `STRIPE_WEBHOOK_SECRET` and stores completed deep-search sessions with the checkout email.
+
+### Admin, email and trademarks
+
+Admin is available only at `/admin`. Set `ADMIN_EMAIL`, `ADMIN_SESSION_SECRET`, and either `ADMIN_PASSWORD_HASH` or `ADMIN_SETUP_TOKEN` for first-time password setup.
+
+Free and paid report emails use Resend when `EMAIL_PROVIDER=resend`, `EMAIL_FROM`, and `RESEND_API_KEY` are set. If missing, reports are still registered and the UI/API reports that email is not configured.
+
+Trademark checks do not return fake hits. Configure `PRV_TRADEMARK_SEARCH_URL` + `PRV_API_KEY` and/or `TMVIEW_TRADEMARK_SEARCH_URL` + `TMVIEW_API_KEY` when official API access is available.
+
 ### Firebase 503 on paid report
 
 Check `FIREBASE_PROJECT_ID`, `FIREBASE_CLIENT_EMAIL`, and `FIREBASE_PRIVATE_KEY`. The app intentionally returns `503` if report storage is not configured.
