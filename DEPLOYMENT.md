@@ -86,7 +86,7 @@ Admin is available only at `/admin`. Set `ADMIN_EMAIL`, `ADMIN_SESSION_SECRET`, 
 
 Free and paid report emails use Resend when `EMAIL_PROVIDER=resend`, `EMAIL_FROM`, and `RESEND_API_KEY` are set. If missing, reports are still registered and the UI/API reports that email is not configured.
 
-Trademark checks do not return fake hits. Configure `PRV_TRADEMARK_SEARCH_URL` + `PRV_API_KEY` and/or `TMVIEW_TRADEMARK_SEARCH_URL` + `TMVIEW_API_KEY` when official API access is available.
+Trademark checks do not return fake hits. Configure `PRV_TRADEMARK_SEARCH_URL` + `PRV_API_KEY` when PRV access is available. EUIPO/TMview uses OAuth client credentials: `TMVIEW_TRADEMARK_SEARCH_URL`, `TMVIEW_CLIENT_ID`, `TMVIEW_CLIENT_SECRET`, and `TMVIEW_TOKEN_URL`.
 
 ### Firebase 503 on paid report
 
